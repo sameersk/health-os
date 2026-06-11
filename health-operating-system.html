@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Health OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="./manifest.webmanifest">
+<script src="./chart.umd.js"></script>
+<script>if(!window.Chart){var _cs=document.createElement('script');_cs.src='https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js';document.head.appendChild(_cs);}</script>
+<style>
+:root{color-scheme:light;
+--bg:#F4F6F9;--s1:#FFFFFF;--s2:#F7F9FB;--s3:#EDF0F4;
+--b:#E5E9F0;--b2:#D3DAE4;
+--txt:#101828;--txt2:#475467;--txt3:#98A2B3;
+--primary:#175CD3;--primary-deep:#1849A9;--primary-bg:#EFF4FF;--primary-glow:rgba(23,92,211,.08);
+--teal:#0E9384;--green:#079455;--green-bg:#ECFDF3;--amber:#DC6803;--amber-bg:#FFFAEB;--red:#D92D20;--red-bg:#FEF3F2;
+--r:14px;--r-sm:10px;--r-xs:8px;
+--glow:0 1px 2px rgba(16,24,40,.05);
+--glow-hover:0 1px 3px rgba(16,24,40,.07),0 4px 12px rgba(16,24,40,.05);
+--shadow-md:0 2px 4px rgba(16,24,40,.04),0 6px 18px rgba(16,24,40,.06)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.45}
+button,input,textarea,select{font:inherit;color:inherit}
+b,strong,.kpi b,.domainScore,.age{font-variant-numeric:tabular-nums}
+::selection{background:var(--primary-bg)}
+
+/* ── Shell: sidebar + main ─────────────────────────────────────────────── */
+.app{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh;max-width:none;margin:0;padding:0}
+.side{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;background:var(--s1);border-right:1px solid var(--b);padding:20px 14px;z-index:30}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 8px 18px;border-bottom:1px solid var(--b);margin-bottom:14px}
+.brand h1{font-size:15.5px;font-weight:700;letter-spacing:-.02em}
+.brand .sub{font-size:10.5px;color:var(--txt3);font-weight:500;letter-spacing:.02em;margin-top:1px}
+.logo{width:34px;height:34px;flex-shrink:0}
+.tabs{display:flex;flex-direction:column;gap:2px;background:none;border:0;padding:0;margin:0;overflow:visible}
+.tab{display:flex;align-items:center;gap:10px;color:var(--txt2);text-decoration:none;border-radius:var(--r-xs);padding:9px 10px;cursor:pointer;white-space:nowrap;font-size:13px;font-weight:500;transition:background .14s,color .14s;position:relative}
+.tab svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;opacity:.85}
+.tab:hover{color:var(--txt);background:var(--s2)}
+.tab.active{color:var(--primary-deep);background:var(--primary-bg);font-weight:600}
+.tab.active::before{content:'';position:absolute;left:-14px;top:7px;bottom:7px;width:3px;border-radius:0 3px 3px 0;background:var(--primary)}
+.side-foot{margin-top:auto;padding:14px 8px 2px;border-top:1px solid var(--b)}
+.side-foot .lock{display:flex;gap:8px;align-items:flex-start;font-size:10.5px;color:var(--txt3);line-height:1.45}
+.side-foot .lock svg{width:13px;height:13px;stroke:var(--txt3);fill:none;stroke-width:1.8;flex-shrink:0;margin-top:1px}
+.side-foot .ver{font-size:10px;color:var(--txt3);margin-top:8px;opacity:.7}
+
+.main{min-width:0;padding:0 28px 48px}
+.top{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:16px 0 14px;margin-bottom:18px;border-bottom:1px solid var(--b);position:sticky;top:0;background:var(--bg);z-index:20}
+.page-title{font-size:17px;font-weight:700;letter-spacing:-.02em}
+.page-title .crumb{font-size:11px;color:var(--txt3);font-weight:500;display:block;letter-spacing:.04em;text-transform:uppercase;margin-bottom:1px}
+.sync{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--b);border-radius:999px;padding:5px 11px;color:var(--txt2);background:var(--s1);font-size:11.5px;font-weight:500;box-shadow:var(--glow)}
+.pill::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--txt3);flex-shrink:0}
+.pill.ok{color:var(--green);border-color:#A6F4C5;background:var(--green-bg)}.pill.ok::before{background:var(--green)}
+.pill.warn{color:var(--amber);border-color:#FEDF89;background:var(--amber-bg)}.pill.warn::before{background:var(--amber)}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--primary-deep);border-radius:var(--r-xs);background:var(--primary);color:#fff;padding:8px 15px;font-weight:600;font-size:13px;cursor:pointer;box-shadow:var(--glow);transition:.15s}
+.btn:hover{background:var(--primary-deep)}
+.btn:active{transform:translateY(.5px)}
+.btn.secondary{background:var(--s1);color:var(--txt);border:1px solid var(--b2);box-shadow:var(--glow)}
+.btn.secondary:hover{background:var(--s2)}
+.btn.small{padding:5px 10px;font-size:11px;border-radius:7px}
+.hidden{display:none!important}
+.view{display:none;animation:fadeUp .2s ease both}.view.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes growX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.9}}
+
+/* ── Cards & layout ───────────────────────────────────────────────────── */
+.card{background:var(--s1);border:1px solid var(--b);border-radius:var(--r);padding:20px;box-shadow:var(--glow);transition:box-shadow .18s,border-color .18s}
+.card:hover{box-shadow:var(--glow-hover)}
+.card h2{font-size:14.5px;font-weight:650;margin:0 0 14px;letter-spacing:-.01em}
+.card h3{font-size:10.5px;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;font-weight:650;margin:0 0 12px}
+.grid{display:grid;gap:14px}.cols2{grid-template-columns:1fr 1fr}.cols3{grid-template-columns:repeat(3,1fr)}.cols4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:1100px){.cols3,.cols4{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.app{grid-template-columns:1fr}.side{position:fixed;left:0;right:0;top:auto;bottom:0;height:auto;flex-direction:row;align-items:center;padding:6px 10px;border-right:0;border-top:1px solid var(--b);box-shadow:0 -4px 16px rgba(16,24,40,.06)}.brand,.side-foot{display:none}.tabs{flex-direction:row;overflow-x:auto;width:100%}.tab{flex-direction:column;gap:3px;font-size:9.5px;padding:7px 9px}.tab.active::before{display:none}.cols2,.cols3,.cols4{grid-template-columns:1fr}.main{padding:0 14px 90px}.top{flex-direction:column;align-items:flex-start;gap:10px}.sync{justify-content:flex-start}}
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+@media(max-width:900px){.hero{grid-template-columns:1fr}}
+.hero-card{background:linear-gradient(135deg,#0B2A5B 0%,#163E83 55%,#175CD3 130%);border:1px solid #1849A9;border-radius:var(--r);padding:28px;position:relative;overflow:hidden;color:#fff;box-shadow:var(--shadow-md)}
+.hero-card::before{content:'';position:absolute;top:-70px;right:-50px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.09),transparent 70%);pointer-events:none}
+.hero-eyebrow{font-size:10.5px;font-weight:650;letter-spacing:.1em;text-transform:uppercase;color:#A4BCFD;margin-bottom:10px}
+.age{font-size:72px;font-weight:250;letter-spacing:-.04em;line-height:.95;color:var(--txt)}
+.age-unit{font-size:26px;font-weight:300;opacity:.45;margin-left:4px}
+.age.good{color:var(--green)}.age.warn{color:var(--amber)}.age.bad{color:var(--red)}
+.hero-card .age{color:#fff}
+.hero-meta{font-size:12.5px;color:rgba(255,255,255,.65);margin-top:12px}
+.pace-badge{display:inline-flex;align-items:center;gap:5px;margin-top:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600;color:#D1E0FF;backdrop-filter:blur(4px)}
+.kpi{display:flex;justify-content:space-between;gap:8px;border-top:1px solid rgba(255,255,255,.14);padding-top:16px;margin-top:18px}
+.kpi-item{display:flex;flex-direction:column;gap:3px}
+.kpi b{font-size:21px;font-weight:600}
+.kpi-sub{font-size:9px;color:rgba(255,255,255,.5);margin-top:1px}
+
+/* ── Text & metric helpers ────────────────────────────────────────────── */
+.muted{color:var(--txt2)}.small{font-size:12px}.tiny{font-size:11px}
+.goodC{color:var(--green)}.warnC{color:var(--amber)}.badC{color:var(--red)}
+.score{height:6px;background:var(--s3);border-radius:99px;overflow:hidden}
+.score span{display:block;height:100%;border-radius:99px;transform-origin:left;animation:growX .7s cubic-bezier(.4,0,.2,1) both}
+.metric{display:flex;gap:10px;align-items:center}.metric .name{flex:1;font-size:13px;color:var(--txt2)}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+.tag{font-size:10.5px;font-weight:550;border:1px solid var(--b);padding:2.5px 8px;border-radius:999px;color:var(--txt2);display:inline-flex;gap:4px;align-items:center;background:var(--s2)}
+.tag.direct{border-color:#A6F4C5;color:var(--green);background:var(--green-bg)}
+.tag.proxy{border-color:#B2CCFF;color:var(--primary);background:var(--primary-bg)}
+.tag.manual{border-color:#FEDF89;color:var(--amber);background:var(--amber-bg)}
+.tag.ai{border-color:#E9D7FE;color:#6941C6;background:#F9F5FF}
+
+/* ── Domains / matrix ─────────────────────────────────────────────────── */
+.matrix{display:grid;grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:14px}
+.domain{background:var(--s1);border:1px solid var(--b);border-radius:var(--r);padding:16px 16px 16px 19px;box-shadow:var(--glow);transition:.18s;position:relative;overflow:hidden}
+.domain::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--dc)}
+.domain:hover{box-shadow:var(--glow-hover);transform:translateY(-1px)}
+.domainTop{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.domainScore{font-size:28px;font-weight:650;color:var(--dc);letter-spacing:-.02em}
+.component{margin-top:10px}.componentRow{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;color:var(--txt2);font-size:12px}
+.deltaRow{display:grid;grid-template-columns:160px 1fr 58px;gap:10px;align-items:center;margin:9px 0}
+.bar{height:6px;background:var(--s3);border-radius:99px;overflow:hidden}.bar span{height:100%;display:block;border-radius:99px}
+
+/* ── Body map ─────────────────────────────────────────────────────────── */
+.bodyLayout{display:grid;grid-template-columns:minmax(340px,500px) 1fr;gap:14px}
+@media(max-width:980px){.bodyLayout{grid-template-columns:1fr}}
+.figure{position:relative;display:flex;justify-content:center;align-items:flex-start;min-height:620px;background:var(--s1);border:1px solid var(--b);border-radius:var(--r);padding:20px 12px;overflow:hidden;box-shadow:var(--glow)}
+.bodyGlow{position:absolute;top:18%;left:50%;transform:translateX(-50%);width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(23,92,211,.05),transparent 70%);animation:pulse 3s ease-in-out infinite;pointer-events:none}
+.bodyShell{position:relative;z-index:2;width:100%;display:flex;justify-content:center;filter:drop-shadow(0 6px 18px rgba(16,24,40,.10));animation:bodyFloat 7s ease-in-out infinite}
+.organLabel{font-size:10px;font-weight:700;fill:#475467;letter-spacing:.08em}
+.leader{stroke:rgba(16,24,40,.22);stroke-width:1;stroke-dasharray:2 3}
+.organDetail{stroke:rgba(16,24,40,.26);stroke-width:1.1;fill:none}
+.muscle{cursor:pointer;stroke:rgba(16,24,40,.13);stroke-width:1;transition:filter .15s,stroke .15s;animation:tissueIn .35s ease both}
+.muscle:hover{filter:brightness(1.05) saturate(1.12);stroke:var(--primary);stroke-width:1.6}
+.organShape{stroke:rgba(16,24,40,.2);stroke-width:1.1}
+.sil{pointer-events:none}
+.tooltip{position:fixed;pointer-events:none;background:#101828;color:#fff;border:1px solid #1D2939;padding:8px 12px;border-radius:var(--r-xs);font-size:12px;display:none;z-index:100;box-shadow:var(--shadow-md)}
+@keyframes bodyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes tissueIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+
+/* ── Habits, forms, tables ────────────────────────────────────────────── */
+.habit{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:12px 14px;border:1px solid var(--b);border-radius:var(--r-sm);background:var(--s1);margin-bottom:8px;transition:.15s;box-shadow:var(--glow)}
+.habit:hover{border-color:var(--b2);box-shadow:var(--glow-hover)}
+.habit input{width:17px;height:17px;accent-color:var(--primary)}
+.streak{font-size:11px;color:var(--txt3)}
+textarea,input,select{width:100%;background:var(--s1);border:1px solid var(--b2);border-radius:var(--r-sm);color:var(--txt);padding:10px 12px;outline:none;transition:border-color .15s,box-shadow .15s;box-shadow:var(--glow)}
+textarea:focus,input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
+textarea{min-height:90px;resize:vertical}
+textarea::placeholder,input::placeholder{color:var(--txt3)}
+.logItem{border-top:1px solid var(--b);padding:10px 0}
+.coachOut{white-space:pre-wrap;line-height:1.6;background:var(--s2);border:1px solid var(--b);border-radius:var(--r-sm);padding:14px;min-height:140px;font-size:13px;color:var(--txt2)}
+.table{width:100%;border-collapse:collapse}.table th,.table td{padding:9px;border-bottom:1px solid var(--b);text-align:left;font-size:12px}.table th{color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;font-size:10.5px;font-weight:650}
+.seg{display:flex;gap:4px;margin:0 0 12px}.seg button{background:var(--s1);border:1px solid var(--b2);color:var(--txt2);border-radius:var(--r-xs);padding:6px 12px;cursor:pointer;font-size:12px;font-weight:500;transition:.14s;box-shadow:var(--glow)}.seg button.active{background:var(--primary);color:#fff;border-color:var(--primary-deep);font-weight:600}
+
+/* ── Charts ───────────────────────────────────────────────────────────── */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+@media(max-width:900px){.chart-grid{grid-template-columns:1fr}}
+.chart-inner{background:var(--s1);border-radius:var(--r-sm);padding:14px;border:1px solid var(--b);box-shadow:var(--glow)}
+.chart-inner h3{margin:0 0 10px}
+.chart-inner canvas{display:block;width:100%!important;height:90px!important}
+</style>
+</head>
+<body>
+<div class="tooltip" id="tip"></div>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="9" fill="#175CD3"/><rect width="36" height="36" rx="9" fill="url(#lgrad)" fill-opacity=".35"/><path d="M7 18.5h4.2l2.6-6.5 3.8 12 3.4-9 2.2 4.5 1.6-1h4.2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="lgrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs></svg>
+      <div>
+        <h1>Health OS</h1>
+        <div class="sub">Personal health intelligence</div>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Main navigation"></nav>
+    <div class="side-foot">
+      <div class="lock">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Local-first. Your health data is processed on this device and never leaves it.</span>
+      </div>
+      <div class="ver">Health OS v2.0 · Garmin-linked</div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="top">
+      <div class="page-title"><span class="crumb">Dashboard</span><span id="pageName">Today</span></div>
+      <div class="sync">
+        <span class="pill" id="conn">Garmin: checking</span>
+        <span class="pill" id="agePill">Age: —</span>
+        <span class="pill" id="lastSync">Not synced</span>
+        <button class="btn" id="syncBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>Sync</button>
+      </div>
+    </div>
+    <main id="views"></main>
+  </div>
+</div>
+<script>
+const COLORS={good:'#079455',warn:'#DC6803',bad:'#D92D20',blue:'#175CD3',violet:'#7A5AF8',none:'#EDF0F4',soft:'#667085'};
+const hg='#0B2A5B 0%, #163E83 55%, #175CD3 130%';
+const TODAY=new Date().toISOString().slice(0,10);
+const GARMIN_TOOLS=['mcp__Garmin_Connect__get_user_profile','mcp__Garmin_Connect__get_sleep_summary','mcp__Garmin_Connect__get_rhr_day','mcp__Garmin_Connect__get_body_battery','mcp__Garmin_Connect__get_daily_steps','mcp__Garmin_Connect__get_activities','mcp__Garmin_Connect__get_vo2max_trend'];
+const TAGS=[
+  {id:'cardiac',name:'Cardiac Health',color:'#D92D20'},
+  {id:'metabolic',name:'Metabolic Health',color:'#DC6803'},
+  {id:'muscle',name:'Muscle Volume',color:'#1570EF'},
+  {id:'mood',name:'Mood',color:'#7A5AF8'},
+  {id:'longevity',name:'Longevity',color:'#079455'},
+  {id:'energy',name:'Daily Energy',color:'#CA8504'},
+  {id:'sleep',name:'Sleep Quality',color:'#6172F3'},
+  {id:'stress',name:'Stress Response',color:'#DD2590'},
+  {id:'hormonal',name:'Hormonal Health',color:'#4CA30D'},
+  {id:'cognitive',name:'Cognitive Function',color:'#088AB2'},
+  {id:'immune',name:'Immune Function',color:'#B54708'},
+  {id:'bone',name:'Bone Density',color:'#854D0E'},
+  {id:'recovery',name:'Recovery',color:'#0E9384'},
+  {id:'inflammation',name:'Inflammation',color:'#C4320A'},
+  {id:'fatloss',name:'Body Composition / Fat Loss',color:'#A15C07'}
+];
+const METRIC_REGISTRY=[
+  ['hrv','HRV','recovery,mood,stress,cardiac,energy,sleep','direct','avg_overnight_hrv','Higher is better; compare to personal baseline'],
+  ['rhr','Resting Heart Rate','cardiac,longevity,recovery,stress,energy','direct','rhr','Lower trend is generally better'],
+  ['bodyBattery','Body Battery','energy,recovery,stress,mood','direct','bodyBattery','Garmin readiness proxy'],
+  ['allDayStress','All-day Stress','stress,recovery,mood,energy,cardiac','direct','avgStress','Garmin 0–100 (7-day avg); lower is better'],
+  ['sleepDuration','Sleep Duration','longevity,cognitive,mood,metabolic,muscle,immune,hormonal','direct','avgSleep','Target 7–9h'],
+  ['sleepConsistency','Sleep Consistency','longevity,cardiac,metabolic,mood,energy,hormonal','proxy','sleepConsistency','Target ≥70%'],
+  ['sleepStages','Sleep Stages','muscle,cognitive,mood,hormonal,recovery,immune','direct','sleepStageScore','Deep 15–20%, REM 20–25%'],
+  ['steps','Daily Steps','longevity,metabolic,cardiac,fatloss,mood','direct','avgSteps','Target ≥8k/day'],
+  ['zones','HR Zone Time','cardiac,longevity,metabolic,fatloss,energy,cognitive','proxy','zoneScore','Weekly Zone 1–3 and 4–5'],
+  ['trainingLoad','Training Load','recovery,muscle,energy,longevity,stress','proxy','strengthMinutes','Uses recent activity duration'],
+  ['vo2','VO₂ Max','longevity,cardiac,energy,metabolic,muscle,cognitive','direct','vo2','Requires Garmin VO₂ data'],
+  ['spo2','SpO₂','sleep,cardiac,cognitive,energy','manual','spo2','Add manually if available'],
+  ['apob','ApoB','cardiac,longevity,inflammation','manual','apob','Lab marker'],
+  ['lpa','Lp(a)','cardiac,longevity,inflammation','manual','lpa','Lab marker'],
+  ['hscrp','hs-CRP','inflammation,cardiac,longevity,metabolic,mood,recovery','manual','hscrp','Lab marker'],
+  ['insulin','Fasting Insulin','metabolic,fatloss,energy,mood,longevity,hormonal','manual','insulin','Lab marker'],
+  ['glucose','Fasting Glucose / HbA1c','metabolic,longevity,energy,fatloss,cardiac,cognitive','manual','glucose','Lab marker or CGM'],
+  ['cgm','CGM','metabolic,mood,energy,fatloss,cognitive,stress','manual','cgm','Food-linked glucose response'],
+  ['testosterone','Testosterone + SHBG','muscle,mood,fatloss,energy,hormonal,bone,recovery','manual','testosterone','Lab marker'],
+  ['cortisol','Cortisol Rhythm','stress,mood,hormonal,muscle,sleep,fatloss,immune','manual','cortisol','Salivary 4-point or proxy from sleep stress'],
+  ['igf1','IGF-1','muscle,recovery,longevity,hormonal,bone','manual','igf1','Lab marker'],
+  ['vitd','Vitamin D','hormonal,muscle,immune,mood,bone,recovery','manual','vitd','Lab marker + supplement log'],
+  ['leanMass','Lean Body Mass %','longevity,metabolic,muscle,fatloss,immune,hormonal,bone','manual','leanMass','DEXA/InBody/manual'],
+  ['grip','Grip Strength','longevity,muscle,recovery,bone,energy','manual','grip','Dynamometer'],
+  ['vo2Lab','VO₂ Max Lab-grade','longevity,cardiac,energy,metabolic,cognitive','manual','vo2Lab','Sports lab value; use to calibrate Garmin estimate'],
+  ['foodQuality','Food Quality','metabolic,energy,mood,inflammation,fatloss,immune','ai','foodScore','AI-estimated from food log'],
+  ['supplements','Supplement Adherence','immune,hormonal,recovery,bone,inflammation','manual','suppScore','Supplement log']
+].map(([id,name,tags,source,key,note])=>({id,name,tags:tags.split(','),source,key,note}));
+const DEFAULT_HABITS=[
+  ['sleep_window','Sleep inside target window','sleep,recovery,longevity'],
+  ['steps_8k','8,000+ steps','cardiac,metabolic,longevity'],
+  ['zone2','Zone 2 / easy cardio 30m','cardiac,metabolic,cognitive'],
+  ['pull_work','Pulling work: rows/pulldowns/face pulls','muscle,recovery'],
+  ['protein','Protein target hit','muscle,fatloss,recovery'],
+  ['fiber','Fiber + plants','metabolic,inflammation,immune'],
+  ['sunlight','Morning sunlight','mood,sleep,hormonal'],
+  ['mobility','Mobility / stretching 10m','recovery,stress'],
+  ['creatine','Creatine/supp stack logged','muscle,cognitive,recovery']
+].map(([id,name,tags])=>({id,name,tags:tags.split(',')}));
+// ── Nutrition → Domain mapping (peer-reviewed RDAs + system contributions) ──
+// Sources: DRI (Institute of Medicine), WHO guidelines, EFSA
+const NUTRIENT_RDAS={
+  calories:     {rda:2200, unit:'kcal'},
+  protein_g:    {rda:65,   unit:'g',   note:'~0.9g/kg for 72kg active male'},
+  carbs_g:      {rda:275,  unit:'g'},
+  fat_g:        {rda:65,   unit:'g'},
+  fiber_g:      {rda:38,   unit:'g'},
+  sodium_mg:    {rda:2300, unit:'mg',  max:2300},
+  omega3_g:     {rda:1.6,  unit:'g'},
+  vitamin_d_iu: {rda:600,  unit:'IU'},
+  calcium_mg:   {rda:1000, unit:'mg'},
+  iron_mg:      {rda:8,    unit:'mg'},
+  magnesium_mg: {rda:400,  unit:'mg'},
+  zinc_mg:      {rda:11,   unit:'mg'},
+  vitamin_b12_ug:{rda:2.4, unit:'µg'},
+  vitamin_c_mg: {rda:90,   unit:'mg'},
+  folate_ug:    {rda:400,  unit:'µg'},
+  potassium_mg: {rda:3400, unit:'mg'},
+};
+// Each entry: domain weights must sum to 1.0
+// Weight represents how much this nutrient affects that domain (0–1 importance scale per nutrient)
+const NUTRIENT_DOMAINS={
+  protein_g:    {muscle:0.35,recovery:0.25,immune:0.15,hormonal:0.15,energy:0.10},
+  fiber_g:      {metabolic:0.40,inflammation:0.30,immune:0.20,mood:0.10},
+  omega3_g:     {cardiac:0.30,cognitive:0.30,inflammation:0.25,mood:0.15},
+  vitamin_d_iu: {immune:0.30,bone:0.25,hormonal:0.20,mood:0.15,muscle:0.10},
+  magnesium_mg: {stress:0.30,sleep:0.25,muscle:0.20,cardiac:0.15,cognitive:0.10},
+  calcium_mg:   {bone:0.50,muscle:0.25,cardiac:0.15,hormonal:0.10},
+  iron_mg:      {energy:0.40,cognitive:0.30,immune:0.20,recovery:0.10},
+  zinc_mg:      {immune:0.35,hormonal:0.25,recovery:0.20,cognitive:0.20},
+  vitamin_b12_ug:{cognitive:0.30,energy:0.30,cardiac:0.20,mood:0.20},
+  vitamin_c_mg: {immune:0.40,inflammation:0.30,recovery:0.20,energy:0.10},
+  folate_ug:    {cardiac:0.30,cognitive:0.30,immune:0.25,mood:0.15},
+  potassium_mg: {cardiac:0.40,metabolic:0.30,stress:0.20,muscle:0.10},
+};
+// Weight: how much does nutrition contribute to each domain score (vs Garmin)
+// Domains with strong dietary evidence get higher nutrition weight
+const DOMAIN_NUTRITION_WEIGHT={
+  cardiac:0.25,metabolic:0.30,muscle:0.25,mood:0.25,longevity:0.20,energy:0.25,
+  sleep:0.15,stress:0.20,hormonal:0.25,cognitive:0.25,immune:0.30,bone:0.35,
+  recovery:0.20,inflammation:0.35,fatloss:0.35
+};
+
+function get7dNutrition(){
+  // Aggregate last 7 days of food logs with parsed nutrition
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-7);
+  const logs=state.food.filter(f=>{try{return new Date(f.date)>=cutoff}catch{return false}});
+  if(!logs.length)return null;
+  // Group by date, sum per day, then average across days
+  const byDay={};
+  for(const f of logs){
+    if(!f.nutrition)continue;
+    byDay[f.date]=byDay[f.date]||{count:0};
+    for(const[k,v] of Object.entries(f.nutrition)){
+      if(typeof v==='number'){byDay[f.date][k]=(byDay[f.date][k]||0)+v;}
+    }
+    byDay[f.date].count++;
+  }
+  const days=Object.values(byDay).filter(d=>d.count>0);
+  if(!days.length)return null;
+  const avg7={};
+  for(const k of Object.keys(NUTRIENT_RDAS)){
+    const vals=days.map(d=>d[k]).filter(v=>v!=null);
+    avg7[k]=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+  }
+  return avg7;
+}
+
+function nutrientCoverageScore(nutrient,value){
+  // Returns 0-100 score: 100 = meeting RDA, 0 = severely deficient
+  const rda=NUTRIENT_RDAS[nutrient]?.rda;
+  if(!rda||value==null)return null;
+  if(nutrient==='sodium_mg') return value<=2300?100:Math.max(0,100-(value-2300)/10); // lower is better for sodium
+  return Math.min(100,Math.round(value/rda*100));
+}
+
+function nutritionDomainBonus(){
+  // Returns {domainId: nutritionScore} — the nutrition contribution to each domain
+  const n7=get7dNutrition();
+  if(!n7)return {};
+  const domainNutriScores={};  // domain → [weighted scores]
+  for(const[nutrient,domainWeights] of Object.entries(NUTRIENT_DOMAINS)){
+    const score=nutrientCoverageScore(nutrient,n7[nutrient]);
+    if(score==null)continue;
+    for(const[domain,weight] of Object.entries(domainWeights)){
+      domainNutriScores[domain]=domainNutriScores[domain]||[];
+      domainNutriScores[domain].push(score*weight);
+    }
+  }
+  const result={};
+  for(const[domain,scores] of Object.entries(domainNutriScores)){
+    result[domain]=Math.round(scores.reduce((a,b)=>a+b,0));
+  }
+  return result;
+}
+
+const GARMIN_ENDPOINTS={
+  'mcp__Garmin_Connect__get_user_profile':'user-profile',
+  'mcp__Garmin_Connect__get_sleep_summary':'sleep-summary',
+  'mcp__Garmin_Connect__get_rhr_day':'rhr-day',
+  'mcp__Garmin_Connect__get_body_battery':'body-battery',
+  'mcp__Garmin_Connect__get_daily_steps':'daily-steps',
+  'mcp__Garmin_Connect__get_activities':'activities',
+  'mcp__Garmin_Connect__get_vo2max_trend':'vo2max-trend'
+};
+const state={profile:null,metrics:{},sleep:[],steps:[],activities:[],body:{},bodyBatteryHistory:[],bodyComp:null,zoneMins30d:null,manual:load('manual',{}),habits:load('habits',{}),food:load('food',[]),supplements:load('supplements',[]),aiNotes:load('aiNotes',''),connectorMode:load('connectorMode','direct'),directApiBase:load('directApiBase','http://127.0.0.1:8787'),appApiToken:load('appApiToken','')};
+function load(k,d){try{return JSON.parse(localStorage.getItem('hos:'+k))??d}catch{return d}} function save(k,v){localStorage.setItem('hos:'+k,JSON.stringify(v))}
+function esc(x){return String(x??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}
+function ds(daysAgo){const d=new Date();d.setDate(d.getDate()-daysAgo);return d.toISOString().slice(0,10)}
+function parse(resp){if(resp==null)return null;if(Array.isArray(resp))return resp;if(typeof resp==='object'&&'result'in resp){let r=resp.result;if(!r||typeof r==='string'&&r.startsWith('Error'))return null;if(typeof r==='string'){try{return JSON.parse(r)}catch{return null}}return r} if(typeof resp==='string'){try{return JSON.parse(resp)}catch{return null}} return resp}
+function activeConnector(){if(state.connectorMode==='cowork')return 'cowork';return 'direct'}  // fully independent by default: local server is the data source; Cowork MCP only if explicitly selected
+function apiConfig(){const b=document.getElementById('directApiBase')?.value?.trim();const t=document.getElementById('appApiToken')?.value?.trim();if(b&&b!==state.directApiBase){state.directApiBase=b;save('directApiBase',b)}if(t!=null&&t!==state.appApiToken){state.appApiToken=t;save('appApiToken',t)}return {base:(state.directApiBase||'').replace(/\/$/,''),token:state.appApiToken||''}}
+function apiHeaders(){const h={'content-type':'application/json'},cfg=apiConfig();if(cfg.token)h['x-app-token']=cfg.token;return h}
+async function directFetch(tool,args){
+  const endpoint=GARMIN_ENDPOINTS[tool]; if(!endpoint) return null;
+  const {base}=apiConfig(); if(!base) return null;
+  const headers=apiHeaders();
+  const r=await fetch(`${base}/api/garmin/${endpoint}`,{method:'POST',headers,body:JSON.stringify(args||{})});
+  if(!r.ok){const txt=await r.text().catch(() => '');state.metrics.lastGarminError=`${endpoint} ${r.status}${txt?': '+txt:''}`;console.warn('Direct Garmin API failed',endpoint,r.status,txt);return null}
+  return parse(await r.json())
+}
+async function directSyncFetch(){
+  const {base}=apiConfig(); if(!base)return null;
+  const headers=apiHeaders();
+  const body={rhr_date:ds(1),body_battery_start:ds(8),body_battery_end:ds(1),steps_start:ds(15),steps_end:ds(1),activities_limit:60,vo2_start:ds(89),vo2_end:ds(1),sleep_dates:[1,2,3,4,5,6,7,8,9,10,11,12,13,14].map(ds)};
+  const r=await fetch(`${base}/api/garmin/sync`,{method:'POST',headers,body:JSON.stringify(body)});
+  if(!r.ok){const txt=await r.text().catch(() => '');state.metrics.lastGarminError=`sync ${r.status}${txt?': '+txt:''}`;console.warn('Direct Garmin sync failed',r.status,txt);return null}
+  return parse(await r.json())
+}
+async function safeFetch(tool,args){try{const mode=activeConnector();if(mode==='cowork'&&window.cowork?.callMcpTool)return parse(await window.cowork.callMcpTool(tool,args));if(mode==='direct')return await directFetch(tool,args);return null}catch(e){console.warn('Garmin fetch failed',tool,e);return null}}
+function ageFromDob(dob){if(!dob)return 24;const b=new Date(dob),n=new Date();let a=n.getFullYear()-b.getFullYear();if(n.getMonth()<b.getMonth()||(n.getMonth()===b.getMonth()&&n.getDate()<b.getDate()))a--;return a}
+async function syncGarmin(){
+  document.getElementById('conn').textContent='Garmin: syncing';document.getElementById('conn').className='pill warn';
+  state.metrics.lastGarminError='';
+  const mode=activeConnector();
+  let profile,rhr,bb,steps,acts,vo2,sleep=[];
+  if(mode==='direct'){
+    const sync=await directSyncFetch();
+    if(sync){
+      profile=sync.profile;rhr=sync.rhr;bb=sync.body_battery;steps=sync.steps;acts=sync.activities;vo2=sync.vo2;sleep=sync.sleep||[];
+      state.metrics.syncErrors=sync.errors||[];
+      if(sync.body_comp)state.bodyComp=sync.body_comp;
+      if(sync.zone_minutes_30d)state.zoneMins30d=sync.zone_minutes_30d;
+      if(sync.hrv_baseline)state.hrvBaseline=sync.hrv_baseline;
+      if(sync.daily_stats?.length)state.dailyStats=sync.daily_stats;
+    }
+  }
+  if(!profile&&!rhr&&!steps&&!acts){
+    profile=await safeFetch('mcp__Garmin_Connect__get_user_profile',{});
+    rhr=null; for(let ri=1;ri<=7;ri++){const _r=await safeFetch('mcp__Garmin_Connect__get_rhr_day',{date:ds(ri)});const _v=_r?.allMetrics?.metricsMap?.WELLNESS_RESTING_HEART_RATE?.[0]?.value??_r?.restingHeartRate??_r?.value??null;if(_v!=null){rhr=_r;break;}}
+    bb=await safeFetch('mcp__Garmin_Connect__get_body_battery',{start_date:ds(8),end_date:ds(1)});
+    steps=await safeFetch('mcp__Garmin_Connect__get_daily_steps',{start_date:ds(15),end_date:ds(1)});
+    acts=await safeFetch('mcp__Garmin_Connect__get_activities',{limit:60});
+    vo2=await safeFetch('mcp__Garmin_Connect__get_vo2max_trend',{start_date:ds(89),end_date:ds(1)});
+    sleep=[]; for(let i=1;i<=14;i++){const s=await safeFetch('mcp__Garmin_Connect__get_sleep_summary',{date:ds(i)}); if(s?.sleep_hours>0)sleep.push(s)}
+  }
+  if(profile) state.profile=profile;
+  // RHR: Python server returns {value: N} directly; also handle old MCP wrapper format
+  state.metrics.rhr=rhr?.value??rhr?.allMetrics?.metricsMap?.WELLNESS_RESTING_HEART_RATE?.[0]?.value??rhr?.restingHeartRate??null;
+  // Body battery: Python server returns [{date, charged, drained}], find last non-null
+  if(Array.isArray(bb)&&bb.length){
+    const validBb=bb.filter(x=>x.charged!=null);
+    state.metrics.bodyBattery=validBb.length?validBb[validBb.length-1].charged:null;
+    state.bodyBatteryHistory=bb.map(x=>({date:x.date||x.calendarDate,value:x.charged,stress_drain:x.stress_drain}));
+  }
+  // Never clobber good cached data with an empty/failed sync result
+  if(Array.isArray(steps)&&steps.length)state.steps=steps;
+  if(acts?.activities?.length)state.activities=acts.activities;
+  if(Array.isArray(sleep)&&sleep.length)state.sleep=sleep;
+  const _vo2=extractVo2(vo2); if(_vo2!=null)state.metrics.vo2=_vo2;
+  computeDerived();
+  const hasGarminData=Boolean(state.profile||state.activities.length||state.sleep.length||state.steps.length||state.metrics.rhr||state.metrics.bodyBattery||state.metrics.vo2);
+  document.getElementById('conn').textContent=hasGarminData?(mode==='cowork'?'Garmin: Cowork MCP':mode==='direct'?'Garmin: Direct API':'Garmin: offline'):'Garmin: auth/config error';
+  document.getElementById('conn').className='pill '+(hasGarminData?'ok':'warn');
+  const err=state.metrics.syncErrors?.length?` · ${state.metrics.syncErrors.length} partial errors`:'';
+  const authErr=state.metrics.lastGarminError?`Garmin error: ${state.metrics.lastGarminError}`:'';
+  document.getElementById('lastSync').textContent=hasGarminData?('Synced '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+err):(authErr||'Garmin unavailable: check backend env/auth token');
+  render();
+  // Re-init charts: render() replaces canvas elements, so charts must be rebuilt after each sync
+  setTimeout(initTrendCharts, 150);
+}
+function extractVo2(v){if(!v)return null;if(typeof v==='number')return v;if(Array.isArray(v)&&v.length){const last=v[v.length-1];return last?.vo2Max??last?.value??null}return v?.value??v?.vo2Max??null}
+function avg(a,fn){return a.length?a.reduce((s,x)=>s+(fn(x)||0),0)/a.length:null}
+function computeDerived(){
+  const s=state.sleep, m=state.metrics;
+  // 30-day rolling averages (WHOOP uses 30d for Pace of Aging)
+  m.avgSleep=avg(s,x=>x.sleep_hours);
+  m.hrv=avg(s.filter(x=>x.avg_overnight_hrv),x=>x.avg_overnight_hrv);
+  m.deep=avg(s,x=>x.deep_sleep_percent);
+  m.rem=avg(s,x=>x.rem_sleep_percent);
+  m.sleepScore=avg(s,x=>x.sleep_score);
+  m.sleepStageScore=Math.min(50,(m.deep??0)/18*50)+Math.min(50,(m.rem??0)/22*50);  // capped per component
+
+  // Sort sleep by date string (ISO strings sort lexicographically — safe)
+  const _ss=[...s].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  m.latestSleep=_ss[0]?.sleep_hours??null;
+  m.latestHrv=_ss.find(x=>x.avg_overnight_hrv)?.avg_overnight_hrv??null;
+  m.latestSleepScore=_ss[0]?.sleep_score??null;
+
+  // Sleep consistency: SD of bedtime in minutes (lower SD = more consistent)
+  const bed=s.map(x=>{
+    if(!x.sleep_start)return null;
+    // sleep_start is now always an ISO string from server
+    const d=new Date(x.sleep_start);if(isNaN(d))return null;
+    let t=d.getHours()*60+d.getMinutes();if(t<360)t+=1440;return t;  // local time, not UTC
+  }).filter(x=>x!=null);
+  if(bed.length>=3){const mean=avg(bed,x=>x),sd=Math.sqrt(avg(bed,x=>(x-mean)**2));m.sleepConsistency=Math.max(0,Math.min(100,100-sd*.67))}
+
+  // Steps — 30-day average
+  const _st=[...state.steps].sort((a,b)=>String(b.calendarDate||b.date||'').localeCompare(String(a.calendarDate||a.date||'')));
+  m.avgSteps=avg(state.steps,x=>x.totalSteps);
+  m.latestSteps=_st.find(x=>(x.totalSteps||0)>0)?.totalSteps??null;
+
+  // Zone time — prefer server-computed 30-day totals; fall back to local estimate
+  if(state.zoneMins30d){
+    m.z13=state.zoneMins30d.z1_3_minutes||0;
+    m.z45=state.zoneMins30d.z4_5_minutes||0;
+  } else {
+    const cutoff=new Date();cutoff.setDate(cutoff.getDate()-30);
+    const recent=state.activities.filter(a=>new Date(a.start_time||'')>=cutoff);
+    let z13=0,z45=0;
+    for(const a of recent){const min=(a.duration_seconds||0)/60,t=(a.type||'').toLowerCase();
+      if(t.includes('strength')){z13+=min*.85;z45+=min*.04}
+      else if(t.includes('run')||t.includes('treadmill')){z13+=min*.45;z45+=min*.35}
+      else if(t.includes('cycl')||t.includes('badminton')){z13+=min*.40;z45+=min*.40}
+      else{z13+=min*.60;z45+=min*.15}
+    }
+    m.z13=z13; m.z45=z45;
+  }
+  // Strength time over 30 days
+  const cutoff30=new Date();cutoff30.setDate(cutoff30.getDate()-30);
+  m.strengthMinutes=state.activities
+    .filter(a=>new Date(a.start_time||'')>=cutoff30)
+    .filter(a=>{const t=(a.type||'').toLowerCase();return t.includes('strength')||t.includes('yoga')||t.includes('pilates')})
+    .reduce((s,a)=>s+(a.duration_seconds||0)/60,0);
+
+  // Zone score (0-100) for domain scoring
+  // WHO 2020: ≥150 min/wk moderate OR ≥75 min/wk vigorous (1 vigorous min = 2 moderate min)
+  // 30-day MVPA-equivalent target = 150×4.3 ≈ 645 min
+  m.mvpaEq=(m.z13||0)+2*(m.z45||0);
+  m.zoneScore=Math.min(100,m.mvpaEq/645*100);
+  // 7-day all-day stress + RHR from daily stats
+  if(state.dailyStats?.length){
+    const sv=state.dailyStats.filter(x=>x.avg_stress!=null&&x.avg_stress>=0);
+    m.avgStress=sv.length?Math.round(avg(sv,x=>x.avg_stress)):null;
+  }
+
+  // Lean body mass from smart scale (WHOOP's 9th healthspan metric)
+  if(state.bodyComp?.lean_kg){
+    m.leanKg=state.bodyComp.lean_kg;
+    // Score lean mass as % of body weight (target: men >75%, women >65%)
+    const wt=state.bodyComp.weight_kg||70;
+    m.leanMass=Math.round(m.leanKg/wt*100);
+  }
+  // Stress proxy: avg daily stress drain from body battery events (last 14d)
+  if(state.bodyBatteryHistory&&Array.isArray(state.bodyBatteryHistory)){
+    const stressVals=state.bodyBatteryHistory.filter(x=>x.stress_drain!=null).map(x=>x.stress_drain);
+    m.stressDrain=stressVals.length?Math.round(avg(stressVals,x=>x)):null;
+  }
+  m.foodScore=foodScore(); m.suppScore=suppScore(); state.body=mapBody(state.activities);
+}
+function scoreFor(key){const m={...state.metrics,...state.manual};const v=m[key];if(v==null||Number.isNaN(v))return null;
+  if(key==='rhr')return clamp(100-(v-55)*(100/30));  // 55 bpm→100, 85→0 (Zhang 2016: +10bpm ≈ +16% mortality)
+  if(key==='bodyBattery')return clamp(v);
+  if(key==='avgSleep')return clamp(v/8*100);
+  if(key==='sleepConsistency')return clamp(v);
+  if(key==='avgSteps')return clamp(v/8000*100);
+  if(key==='strengthMinutes')return v>=60?95:v>=30?75:v>=15?50:25;  // 30-day target ≥60min
+  if(key==='zoneScore')return clamp(v);
+  if(key==='sleepStageScore')return clamp(v);
+  if(key==='vo2'){
+    // Age-adjusted (ACSM/Cooper norms decline ~0.35 ml/kg/min/yr after 25)
+    const age=ageFromDob(state.profile?.userData?.birthDate);
+    const adj=Math.max(0,age-25)*0.35, poor=35-adj, excellent=53-adj;
+    return clamp((v-poor)/(excellent-poor)*100);
+  }
+  if(key==='hrv'){
+    // Best practice: score vs PERSONAL baseline (Garmin balanced range), not population norms
+    const b=state.hrvBaseline;
+    if(b?.balanced_low){
+      const lo=b.balanced_low, up=b.balanced_upper||lo+12;
+      if(v>=up)return clamp(90+(v-up));
+      if(v>=lo)return Math.round(70+(v-lo)/Math.max(1,up-lo)*20);
+      return clamp(70*v/lo);
+    }
+    return clamp((v-25)/(65-25)*100);  // population fallback
+  }
+  if(key==='avgStress')return clamp(110-v*1.3);  // Garmin all-day stress: 25→77, 50→45, 75→12
+  if(key==='leanMass')return clamp((v-55)/25*100);   // men: 55–80%
+  if(key==='foodScore'||key==='suppScore')return clamp(v);
+  return clamp(Number(v)||50)
+}
+function clamp(x){return Math.max(0,Math.min(100,Math.round(x)))}
+function parseNutritionText(text){
+  if(!text)return null;
+  let raw=String(text).trim();
+  const fenced=raw.match(/```(?:json)?\s*([\s\S]*?)```/i); if(fenced) raw=fenced[1].trim();
+  const start=raw.indexOf('{'), end=raw.lastIndexOf('}'); if(start>=0&&end>start) raw=raw.slice(start,end+1);
+  try{return JSON.parse(raw)}catch{return null}
+}
+function nutritionNumber(n,...keys){for(const k of keys){const v=n?.[k];if(v!=null&&!Number.isNaN(Number(v)))return Number(v)}return null}
+function nutritionBadges(entry){const n=entry.nutrition||{};const protein=nutritionNumber(n,'protein_g','protein'),fiber=nutritionNumber(n,'fiber_g','fiber'),cal=nutritionNumber(n,'calories','kcal');const bits=[];if(cal!=null)bits.push(`${Math.round(cal)} kcal`);if(protein!=null)bits.push(`${Math.round(protein)}g protein`);if(fiber!=null)bits.push(`${Math.round(fiber)}g fiber`);return bits.map(b=>`<span class="tag ai">${b}</span>`).join(' ')}
+function foodScore(){
+  const todays=state.food.filter(f=>f.date===TODAY);if(!todays.length)return 50;let s=58;
+  for(const f of todays){
+    const txt=(f.text||'').toLowerCase();const n=f.nutrition||{};
+    const protein=nutritionNumber(n,'protein_g','protein'),fiber=nutritionNumber(n,'fiber_g','fiber'),cal=nutritionNumber(n,'calories','kcal');
+    if(protein!=null){if(protein>=30)s+=12;else if(protein>=15)s+=7;else s-=3}else if(/protein|chicken|fish|egg|paneer|dal|lentil|whey|tofu/.test(txt))s+=8;
+    if(fiber!=null){if(fiber>=8)s+=10;else if(fiber>=4)s+=5;else s-=3}else if(/vegetable|salad|fruit|berries|spinach|fiber|beans/.test(txt))s+=8;
+    if(cal!=null&&cal>1200)s-=5;
+    const flags=[...(Array.isArray(n.flags)?n.flags:[]),txt].join(' ').toLowerCase();
+    if(/soda|fried|dessert|chips|alcohol|pizza|burger|ultra.processed|high sugar/.test(flags))s-=12;
+  }
+  return clamp(s)
+}
+function suppScore(){const t=state.supplements.filter(s=>s.date===TODAY);return clamp(t.length*25)}
+function domainScores(){
+  const nutBonus=nutritionDomainBonus();
+  return TAGS.map(tag=>{
+    const ms=METRIC_REGISTRY.filter(m=>m.tags.includes(tag.id));
+    const vals=ms.map(m=>scoreFor(m.key)).filter(v=>v!=null);
+    const garminScore=vals.length?Math.round(avg(vals,x=>x)):null;
+    const nutScore=nutBonus[tag.id]??null;
+    const nutWeight=DOMAIN_NUTRITION_WEIGHT[tag.id]??0;
+    // Blend: if we have both, weight them; if only one, use that
+    let score=null;
+    if(garminScore!=null&&nutScore!=null){score=Math.round(garminScore*(1-nutWeight)+nutScore*nutWeight)}
+    else if(garminScore!=null){score=garminScore}
+    else if(nutScore!=null){score=nutScore}
+    return {...tag,score,garminScore,nutScore,metrics:ms};
+  });
+}
+function whoopAge(){
+  // WHOOP's 9 healthspan metrics — all using 30-day rolling averages
+  const m=state.metrics, chrono=ageFromDob(state.profile?.userData?.birthDate);
+  const del=[];
+  // 1. Sleep Duration (target 7–9h)
+  del.push(['Sleep Duration', m.avgSleep==null?0:(m.avgSleep>=7?-0.3:m.avgSleep>=6?10*Math.log(1.05)*(7-m.avgSleep):10*Math.log(1.12)*(7-m.avgSleep))]);
+  // 2. Sleep Consistency (target ≥70% = SD <60min)
+  del.push(['Sleep Consistency', m.sleepConsistency==null?0:(m.sleepConsistency>=70?-10*Math.log(1.15):m.sleepConsistency>=50?10*Math.log(1.20):10*Math.log(1.48))]);
+  // 3. Daily Steps (target ≥8k; Paluch 2022 dose-response)
+  del.push(['Daily Steps', m.avgSteps==null?0:(m.avgSteps>=8000?-.5:m.avgSteps>=5000?.3:Math.min(3.5,10*Math.log(1.20)*((8000-m.avgSteps)/1000)*.7))]);
+  // 4. Aerobic volume — WHO 2020: ≥150 min/wk MVPA-equivalent (vigorous counts 2×) → ≥645 min/30d
+  const eq=m.mvpaEq??((m.z13||0)+2*(m.z45||0));
+  del.push(['Aerobic volume (WHO-eq)', eq>=645?-0.5:eq>=320?.3:1.2]);
+  // 5. Vigorous share — WHO: ≥75 min/wk vigorous → ≥300 min/30d (additional benefit over moderate-only)
+  del.push(['Vigorous (Zone 4–5)', m.z45>=300?-0.4:m.z45>=120?0:.6]);
+  // 6. Strength Time (target ≥60 min/30 days = ~2 sessions/week)
+  del.push(['Strength Work', m.strengthMinutes>=60?-0.7:m.strengthMinutes>=30?-0.2:m.strengthMinutes>=15?.5:10*Math.log(1.12)]);
+  // 7. VO2 Max — continuous gradient (Mandsager 2018/Kodama 2009: ~10-25% mortality per MET);
+  //    centred at 42 ml/kg/min for late-20s male, capped ±[2, 3] years
+  del.push(['VO₂ Max', m.vo2==null?0:Math.max(-2,Math.min(3,(42-m.vo2)*0.3))]);
+  // 8. Resting HR (target ≤60; each 5 bpm above ≈ +0.4y)
+  del.push(['Resting HR', m.rhr==null?0:(m.rhr<=55?-.6:m.rhr<=60?-.2:m.rhr<=70?.4:(m.rhr-70)/5*.9)]);
+  // 9. Lean Body Mass (target lean% ≥75% for males; below 70% = concern)
+  del.push(['Lean Body Mass', m.leanMass==null?0:(m.leanMass>=75?-.3:m.leanMass>=70?.2:.8)]);
+  // Deltas use the Gompertz mapping: age-equivalent ≈ ln(hazard ratio) / ln(2) × ~8-10y
+  // (all-cause mortality doubles roughly every 8 years of adult age). 10×ln(HR) is that
+  // mapping with a 10y doubling assumption. Caps prevent any single metric dominating,
+  // and the total is capped at ±8y because the metrics are correlated (sleep duration,
+  // consistency and stages share variance) — summing uncapped would double-count.
+  const sum=Math.max(-8,Math.min(8,del.reduce((s,d)=>s+d[1],0)));
+  return {chrono, age:Math.round((chrono+sum)*10)/10, pace:Math.max(.4,Math.round((1+sum/10)*10)/10), del};
+}
+function mapBody(acts){
+  const M={Chest:0,'Front Delts':0,Triceps:0,Biceps:0,Lats:0,'Rear Delts':0,Traps:0,Core:0,'Hip Flexors':0,'Lower Back':0,Quads:0,Hamstrings:0,Glutes:0,Calves:0,Forearms:0,Heart:0,Brain:0,Lungs:0,Liver:0,Kidneys:0,Pancreas:0,Gut:0};
+  const log=[]; for(const a of acts){const n=(a.name||'').toLowerCase(),t=(a.type||'').toLowerCase(),hit=new Set(); const add=(...x)=>x.forEach(y=>hit.add(y));
+    if(/chest|bench|push/.test(n))add('Chest','Front Delts','Triceps'); if(/leg|squat|deadlift|lunge/.test(n))add('Quads','Hamstrings','Glutes','Calves','Hip Flexors','Lower Back','Core'); if(/abs|core/.test(n))add('Core');
+    if(/back|pull|row|lat/.test(n))add('Lats','Biceps','Rear Delts','Traps'); if(/shoulder|delt|press/.test(n))add('Front Delts','Triceps','Traps'); if(/bicep|curl/.test(n))add('Biceps','Forearms'); if(/tricep|dip/.test(n))add('Triceps');
+    if(/run|cycl|treadmill|badminton|swim/.test(t+n))add('Heart','Lungs','Brain','Quads','Hamstrings','Calves','Hip Flexors','Core'); if(/breath|meditat|yoga/.test(t+n))add('Brain','Lungs','Core');
+    if(t.includes('strength')&&!hit.size)add('Chest','Front Delts','Triceps','Lats','Biceps'); if(hit.size){hit.forEach(h=>M[h]++);log.push({name:a.name||a.type,date:(a.start_time||'').slice(0,10),hit:[...hit]})}
+  }
+  const todayFood=state.food.filter(f=>f.date===TODAY), todaySupps=state.supplements.filter(s=>s.date===TODAY);
+  if(todayFood.length){M.Gut+=todayFood.length;M.Liver+=todayFood.length;M.Pancreas+=todayFood.length;log.push({name:'Food logs / nutrient processing',date:TODAY,hit:['Gut','Liver','Pancreas']})}
+  if(todaySupps.length){M.Liver+=todaySupps.length;M.Kidneys+=todaySupps.length;log.push({name:'Supplement logs / clearance systems',date:TODAY,hit:['Liver','Kidneys']})}
+  return {M,log}
+}
+function colorFor(n){return n===0?COLORS.bad:n<=2?COLORS.warn:COLORS.good}
+function activeIndex(){
+  const raw=(location.hash||'#tab-0').replace('#tab-','');
+  const n=Number(raw);
+  return Number.isFinite(n)&&n>=0&&n<=7?n:0
+}
+const TAB_ICONS=[
+  '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+  '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
+  '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  '<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
+  '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 8.5-8.5 8.38 8.38 0 0 1 3.8.9 8.5 8.5 0 0 1 4.7 7.6z"/>',
+  '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'
+];
+function render(){
+  const age=whoopAge();document.getElementById('agePill').textContent='Age: '+age.chrono; const tabs=['Today','Healthspan','Metrics Matrix','Body Map','Habits','Food + Supplements','AI Coach','Settings']; const active=activeIndex();
+  document.getElementById('tabs').innerHTML=tabs.map((t,i)=>`<a class="tab ${i===active?'active':''}" href="#tab-${i}" data-tab="${i}"><svg viewBox="0 0 24 24">${TAB_ICONS[i]}</svg><span>${t}</span></a>`).join('');
+  const pn=document.getElementById('pageName'); if(pn)pn.textContent=tabs[active]||'Today';
+  document.getElementById('views').innerHTML=[viewToday(),viewHealth(age),viewMatrix(),viewBody(),viewHabits(),viewFood(),viewCoach(),viewSettings()].map((v,i)=>`<section class="view ${i===active?'active':''}" data-view="${i}">${v}</section>`).join('');
+  bind();
+  // render() replaces all canvases — charts MUST be rebuilt after every render, not just after sync
+  clearTimeout(window.__chartTimer);
+  window.__chartTimer=setTimeout(initTrendCharts,80);
+}
+function val(x,s=''){return x==null?'—':(typeof x==='number'?Math.round(x*10)/10:x)+s}
+function viewToday(){const m=state.metrics,a=whoopAge();const ds=domainScores().filter(d=>d.score!=null).sort((a,b)=>a.score-b.score).slice(0,5);
+return `<div class="hero"><div class="card" style="background:linear-gradient(135deg,${hg});color:#fff;border:none"><h3 style="color:rgba(255,255,255,.72);margin-bottom:8px">Healthspan Age</h3><div style="font-size:76px;font-weight:300;letter-spacing:-.06em;line-height:.92;color:#fff">${a.age}<span style="font-size:24px;opacity:.6;margin-left:4px">yrs</span></div><div style="font-size:13px;opacity:.72;margin-top:10px">Chronological ${a.chrono} &middot; aging ${a.pace}× ${a.pace<=1?'✓':'↑'}</div><div class="kpi"><span>Sleep<br><b>${val(m.latestSleep??m.avgSleep,'h')}</b><br><span class="tiny muted" style="font-size:10px">${m.avgSleep?'avg '+Math.round(m.avgSleep*10)/10+'h':''}</span></span><span>HRV<br><b>${val(m.latestHrv??m.hrv)}</b><br><span class="tiny muted" style="font-size:10px">${m.hrv?'avg '+Math.round(m.hrv):''}</span></span><span>Steps<br><b>${(m.latestSteps??m.avgSteps)?Math.round(m.latestSteps??m.avgSteps).toLocaleString():'—'}</b><br><span class="tiny muted" style="font-size:10px">${m.avgSteps?'avg '+Math.round(m.avgSteps/1000*10)/10+'k':''}</span></span><span>RHR<br><b>${val(m.rhr)}</b></span></div></div><div class="card"><h3>Lowest-scoring systems</h3>${ds.map(d=>metricLine(d.name,d.score,d.color)).join('')}</div></div>
+<div class="grid cols3" style="margin-top:12px">${['sleep','recovery','cardiac','metabolic','muscle','stress'].map(id=>{const d=domainScores().find(x=>x.id===id);return `<div class="card"><h3>${d.name}</h3><div class="domainScore" style="color:${d.color}">${d.score??'—'}</div><div class="score"><span style="width:${d.score??0}%;background:${d.color}"></span></div></div>`}).join('')}</div>
+${recommendationsHTML()}
+<div class="card" style="margin-top:12px">
+  <h2 style="margin-bottom:14px">Trends — last 30 days <span class="muted small" style="font-size:11px;font-weight:400">${state.sleep.length} nights · ${state.steps.length} step days</span></h2>
+  <div class="chart-grid">
+    <div class="chart-inner"><h3>Sleep duration (h)</h3><canvas id="tSleep"></canvas></div>
+    <div class="chart-inner"><h3>HRV — overnight avg</h3><canvas id="tHrv"></canvas></div>
+    <div class="chart-inner"><h3>Daily steps</h3><canvas id="tSteps"></canvas></div>
+    <div class="chart-inner"><h3>Body battery — charged</h3><canvas id="tBb"></canvas></div>
+    <div class="chart-inner"><h3>Sleep score</h3><canvas id="tSleepScore"></canvas></div>
+    <div class="chart-inner"><h3>Stress drain / day (BB pts)</h3><canvas id="tStress"></canvas></div>
+  </div>
+</div>`}
+// ─── Evidence-based recommendations engine (rule-driven, from current data) ──
+// 56 preset rules across 4 categories. Each fires on a measurable trigger from
+// your Garmin + nutrition data and cites its evidence base.
+// NOT medical advice — lifestyle guidance from consensus guidelines & meta-analyses.
+const REC_CATS={
+  H:{name:'Healthspan & Longevity',color:'#079455',icon:'🧬'},
+  P:{name:'Athletic Performance',color:'#1570EF',icon:'🏃'},
+  O:{name:'Organ Support',color:'#DC6803',icon:'❤️'},
+  B:{name:'Brain & Mental Health',color:'#7A5AF8',icon:'🧠'},
+};
+function recContext(){
+  const m=state.metrics, n7=get7dNutrition();
+  const day7=new Date(Date.now()-7*864e5).toISOString().slice(0,10);
+  const day14=new Date(Date.now()-14*864e5).toISOString().slice(0,10);
+  const s7=state.sleep.filter(x=>x.date>=day7);
+  const sleepAvg7=avg(s7,x=>x.sleep_hours);
+  const hrv7=avg(s7.filter(x=>x.avg_overnight_hrv),x=>x.avg_overnight_hrv);
+  const score7=avg(s7,x=>x.sleep_score);
+  const bb7=(state.bodyBatteryHistory||[]).filter(x=>x.date>=day7&&x.stress_drain!=null);
+  const stress7=(m.avgStress!=null)?m.avgStress:(bb7.length?avg(bb7,x=>x.stress_drain):null);
+  const st7=state.steps.filter(x=>(x.calendarDate||x.date)>=day7);
+  const steps7=st7.length?avg(st7,x=>x.totalSteps):null;
+  const lateNights=s7.filter(x=>{const d=new Date(x.sleep_start);if(isNaN(d))return false;const h=d.getHours();return h>=0&&h<5}).length;
+  const actDates=[...new Set(state.activities.map(a=>(a.start_time||'').slice(0,10)).filter(Boolean))].sort();
+  let consec=0;{const d=new Date();for(;;){const k=d.toISOString().slice(0,10);if(actDates.includes(k)){consec++;d.setDate(d.getDate()-1)}else break}}
+  const restDays7=7-new Set(actDates.filter(x=>x>=day7)).size;
+  const variety=new Set(state.activities.filter(a=>(a.start_time||'').slice(0,10)>=day14).map(a=>(a.type||'').toLowerCase())).size;
+  const supp=(state.supplements||[]).map(s=>(s.text||'').toLowerCase()).join(' ');
+  const cov=k=>n7?nutrientCoverageScore(k,n7[k]):null;
+  const gap=k=>{const s=cov(k);return s!=null&&s<70?s:null};
+  const r0=x=>x==null?'—':Math.round(x), r1x=x=>x==null?'—':Math.round(x*10)/10;
+  return {m,n7,cov,gap,sleepAvg7,hrv7,score7,stress7,steps7,lateNights,consec,restDays7,variety,supp,r0,r1:r1x};
+}
+const HCP_RULES=[
+// ════════ HEALTHSPAN & LONGEVITY (15) ════════
+{cat:'H',pri:2,icon:'😴',title:'Extend average sleep toward 7–9h',
+ test:c=>c.m.avgSleep!=null&&c.m.avgSleep<7?`30-day avg ${c.r1(c.m.avgSleep)}h`:null,
+ action:'Fix a constant wake time (±30 min, 7 days/week); shift bedtime earlier in 15-min steps; morning outdoor light within 1h of waking; bedroom ≤19°C.',
+ evidence:'AASM/SRS consensus: <7h linked to higher CVD, obesity, all-cause mortality (Watson 2015)'},
+{cat:'H',pri:2,icon:'⏰',title:'Stabilise your sleep schedule',
+ test:c=>c.m.sleepConsistency!=null&&c.m.sleepConsistency<60?`Consistency ${c.r0(c.m.sleepConsistency)}/100`:null,
+ action:'Anchor wake time first — it sets circadian phase. Avoid >1h weekend shifts (social jet lag).',
+ evidence:'Irregular sleep timing predicts metabolic syndrome & CVD independent of duration (Huang 2020 JACC)'},
+{cat:'H',pri:2,icon:'🚶',title:'Raise daily movement',
+ test:c=>c.m.avgSteps!=null&&c.m.avgSteps<8000?`${c.r0(c.m.avgSteps).toLocaleString()} steps/day avg`:null,
+ action:'Add 2× 15-min brisk walks; post-lunch and post-dinner walks also blunt glucose spikes.',
+ evidence:'8–10k steps/day ≈ 50% lower mortality vs 4k (Paluch 2022 Lancet); post-meal walks (Reynolds 2016)'},
+{cat:'H',pri:2,icon:'🫀',title:'Build your Zone 2 base',
+ test:c=>c.m.mvpaEq!=null&&c.m.mvpaEq<645?`${c.r0(c.m.mvpaEq)} MVPA-equivalent min in 30 days (WHO target 645)`:null,
+ action:'3× 30–45 min conversational-pace sessions/week (cycle, incline walk, easy run).',
+ evidence:'WHO/AHA ≥150 min/wk moderate aerobic; Zone 2 improves mitochondrial function (San-Millán 2018)'},
+{cat:'H',pri:3,icon:'🔥',title:'Add high-intensity minutes',
+ test:c=>c.m.z45!=null&&c.m.z45<120?`${c.r0(c.m.z45)} min Zone 4–5 in 30 days (WHO: ≥300)`:null,
+ action:'1× weekly: 4×4 min hard / 3 min easy, or 6–8 hill sprints.',
+ evidence:'HIIT robustly raises VO₂max — strongest single mortality predictor (Mandsager 2018 JAMA)'},
+{cat:'H',pri:2,icon:'🏋️',title:'Hit minimum strength dose',
+ test:c=>c.m.strengthMinutes!=null&&c.m.strengthMinutes<60?`${c.r0(c.m.strengthMinutes)} min in 30 days`:null,
+ action:'2× 30-min full-body sessions/week — squat, hinge, push, pull, carry. Progressive overload.',
+ evidence:'30–60 min/wk resistance training → 10–17% lower all-cause mortality (Momma 2022 BJSM)'},
+{cat:'H',pri:2,icon:'❤️',title:'Resting HR is elevated',
+ test:c=>c.m.rhr!=null&&c.m.rhr>70?`RHR ${c.r0(c.m.rhr)} bpm`:null,
+ action:'Most responsive levers: Zone 2 volume, sleep regularity, less alcohol, stress downshifts. Re-check in 4 weeks; if persistently >80, mention to your doctor.',
+ evidence:'Each +10 bpm RHR ≈ 16% higher all-cause mortality (Zhang 2016 CMAJ meta-analysis)'},
+{cat:'H',pri:3,icon:'🫁',title:'Raise VO₂max — your strongest longevity lever',
+ test:c=>c.m.vo2!=null&&c.m.vo2<40?`VO₂max ${c.r1(c.m.vo2)} ml/kg/min`:null,
+ action:'Combine weekly Zone 2 base + one 4×4 interval session. Every +1 MET ≈ 10–25% mortality reduction.',
+ evidence:'Cardiorespiratory fitness inversely predicts mortality with no upper limit (Mandsager 2018; Kodama 2009 JAMA)'},
+{cat:'H',pri:3,icon:'⌚',title:'No VO₂max estimate on record',
+ test:c=>c.m.vo2==null?'Garmin has no VO₂max for you yet':null,
+ action:'Do one ≥15-min outdoor GPS run/brisk-walk with HR — Garmin will estimate VO₂max, unlocking fitness-age tracking.',
+ evidence:'VO₂max is the single strongest physiological predictor of healthspan (Kodama 2009 JAMA)'},
+{cat:'H',pri:3,icon:'💪',title:'Protect lean body mass',
+ test:c=>c.m.leanMass!=null&&c.m.leanMass<75?`Lean mass ${c.r0(c.m.leanMass)}% of body weight`:null,
+ action:'Pair 1.6 g/kg/day protein with progressive resistance training; recheck scale trend monthly.',
+ evidence:'Muscle mass independently predicts survival (Srikanthan 2014 Am J Med)'},
+{cat:'H',pri:2,icon:'🌾',title:'Fiber well below target',
+ test:c=>c.gap('fiber_g')!=null?`~${c.r0(c.n7.fiber_g)}g/day vs 38g target`:null,
+ action:'1 bowl dal/legumes + 2 veg servings daily; swap part of white rice for brown/millets.',
+ evidence:'Each +10g/day fiber ≈ 10% lower CVD mortality (Reynolds 2019 Lancet)'},
+{cat:'H',pri:3,icon:'⚖️',title:'Calorie intake trending high',
+ test:c=>c.cov('calories')!=null&&c.cov('calories')>115?`~${c.r0(c.n7.calories)} kcal/day logged (>115% of estimate)`:null,
+ action:'Trim liquid calories and refined-carb portions first; protein + fiber at each meal preserve satiety.',
+ evidence:'Modest sustained caloric restriction improves cardiometabolic ageing markers (CALERIE; Most 2017)'},
+{cat:'H',pri:3,icon:'🌙',title:'Sleep quality (score) is low this week',
+ test:c=>c.score7!=null&&c.score7<70?`7-day avg sleep score ${c.r0(c.score7)}`:null,
+ action:'Audit the big four: late caffeine, alcohol, late meals, screen light. Change one variable for a week and watch the score.',
+ evidence:'Sleep quality predicts inflammation & glucose control beyond duration (Irwin 2016)'},
+{cat:'H',pri:2,icon:'🛑',title:'No rest day this week',
+ test:c=>c.restDays7===0&&(c.m.z45||0)>30?'7 consecutive training days + high-intensity load':null,
+ action:'Schedule one full rest or active-recovery day (walk + mobility only) per week.',
+ evidence:'Inadequate recovery is central to overtraining syndrome (Meeusen 2013 ECSS/ACSM consensus)'},
+{cat:'H',pri:1,icon:'🧘',title:'Chronic stress load is high',
+ test:c=>c.stress7!=null&&c.stress7>=30?`7-day avg stress level ${c.r0(c.stress7)}/100`:null,
+ action:'Daily 10–20 min downshift: NSDR/yoga-nidra, outdoor walk, slow breathing. Hard caffeine cutoff 8h pre-bed.',
+ evidence:'Chronic psychological stress predicts CHD incidence (Chida 2008 JACC meta-analysis); mindfulness lowers cortisol (Goyal 2014)'},
+
+// ════════ ATHLETIC PERFORMANCE (15) ════════
+{cat:'P',pri:1,icon:'🛌',title:'Recovery day — last night was short',
+ test:c=>c.m.latestSleep!=null&&c.m.latestSleep<6?`Last night ${c.r1(c.m.latestSleep)}h`:null,
+ action:'Skip max-effort work; technique/mobility or Zone 1–2 only. 20-min early-afternoon nap if possible.',
+ evidence:'Sleep extension improved sprint times & accuracy in athletes (Mah 2011); <6h raises injury risk (Milewski 2014)'},
+{cat:'P',pri:1,icon:'💛',title:'HRV trending down — deload this week',
+ test:c=>c.hrv7!=null&&c.m.hrv&&c.hrv7<c.m.hrv*0.93?`7-day HRV ${c.r0(c.hrv7)} vs 30-day ${c.r0(c.m.hrv)}`:null,
+ action:'Cut intensity ~30–40% for 3–5 days, keep easy volume, prioritise sleep; resume hard sessions when HRV normalises.',
+ evidence:'HRV-guided training beats pre-planned programs (Kiviniemi 2007; Plews 2013)'},
+{cat:'P',pri:3,icon:'🟢',title:'Green light — recovery is trending up',
+ test:c=>c.hrv7!=null&&c.m.hrv&&c.hrv7>=c.m.hrv*1.03&&(c.m.bodyBattery||0)>60?`7-day HRV ${c.r0(c.hrv7)} above baseline, battery ${c.r0(c.m.bodyBattery)}`:null,
+ action:'Your best adaptation window: schedule the week\'s hardest session (intervals or heavy strength) in the next 24–48h.',
+ evidence:'Training hard on high-HRV days maximises aerobic gains (Kiviniemi 2007)'},
+{cat:'P',pri:2,icon:'📉',title:'4+ consecutive training days',
+ test:c=>c.consec>=4?`${c.consec} days straight`:null,
+ action:'Insert an easy/rest day; adaptation happens during recovery, not training.',
+ evidence:'Monotony + density without recovery predicts overreaching (Foster 1998; Meeusen 2013)'},
+{cat:'P',pri:3,icon:'🔀',title:'Low training variety',
+ test:c=>c.variety>0&&c.variety<2?`Only ${c.variety} activity type in last 14 days`:null,
+ action:'Add one cross-training mode/week (swim, cycle, badminton, yoga) to spread tissue load.',
+ evidence:'Training monotony associates with injury & staleness (Foster 1998)'},
+{cat:'P',pri:2,icon:'🥚',title:'Protein below athletic target',
+ test:c=>c.gap('protein_g')!=null?`~${c.r0(c.n7.protein_g)}g/day logged`:null,
+ action:'1.6 g/kg/day across 3–4 meals (~25–40g each), one within 2h post-training; include breakfast protein.',
+ evidence:'1.6 g/kg/day maximises resistance-training lean gains (Morton 2018 BJSM meta-analysis)'},
+{cat:'P',pri:1,icon:'⚠️',title:'Possible under-fuelling',
+ test:c=>c.cov('calories')!=null&&c.cov('calories')<70?`~${c.r0(c.n7.calories)} kcal/day logged vs ~2200 needs`:null,
+ action:'If logs are complete, raise intake on training days — chronic deficits suppress hormones, recovery and bone.',
+ evidence:'Low energy availability (RED-S) impairs performance, endocrine & bone health (Mountjoy 2018 IOC consensus)'},
+{cat:'P',pri:3,icon:'🍚',title:'Carbohydrate low for your intensity load',
+ test:c=>c.cov('carbs_g')!=null&&c.cov('carbs_g')<60&&(c.m.z45||0)>120?`~${c.r0(c.n7.carbs_g)}g/day with ${c.r0(c.m.z45)} min Zone 4–5`:null,
+ action:'Time carbs around hard sessions (1–1.2 g/kg in the 2h before and after).',
+ evidence:'Carb availability governs high-intensity output (Burke 2011 IOC nutrition consensus)'},
+{cat:'P',pri:2,icon:'🩸',title:'Iron intake is low — performance risk',
+ test:c=>c.gap('iron_mg')!=null?`~${c.r1(c.n7.iron_mg)}mg/day vs 8mg RDA`:null,
+ action:'Add legumes/greens/red meat; pair plant iron with vitamin C, avoid tea/coffee with meals. If fatigued, ask your doctor for ferritin.',
+ evidence:'Iron deficiency (even without anaemia) impairs endurance; repletion restores it (Sim 2019 EJAP)'},
+{cat:'P',pri:3,icon:'🦵',title:'High cardio volume, no strength support',
+ test:c=>(c.m.z13||0)>200&&(c.m.strengthMinutes||0)<30?`${c.r0(c.m.z13)} min cardio vs ${c.r0(c.m.strengthMinutes)} min strength (30d)`:null,
+ action:'2× weekly heavy/explosive lower-body strength improves running economy & resilience.',
+ evidence:'Strength training improves endurance economy ~2–8% (Rønnestad & Mujika 2014)'},
+{cat:'P',pri:3,icon:'⚙️',title:'Zinc low — recovery & hormones',
+ test:c=>c.gap('zinc_mg')!=null?`~${c.r1(c.n7.zinc_mg)}mg/day vs 11mg RDA`:null,
+ action:'Add seeds, legumes, dairy, meat/shellfish; deficiency impairs testosterone & immune recovery in athletes.',
+ evidence:'Zinc status affects androgen levels & immune function (Prasad 1996; Hemilä 2017)'},
+{cat:'P',pri:3,icon:'💊',title:'Consider creatine (discuss with clinician)',
+ test:c=>(c.m.strengthMinutes||0)>30&&!c.supp.includes('creatine')?'Strength training regularly, no creatine in supplement log':null,
+ action:'3–5 g creatine monohydrate daily is the best-evidenced sports supplement; also emerging cognitive benefits.',
+ evidence:'ISSN position stand (Kreider 2017); cognition meta-analysis (Avgerinos 2018)'},
+{cat:'P',pri:3,icon:'🌙',title:'Deep sleep low — growth hormone window',
+ test:c=>c.m.deep!=null&&c.m.deep<15?`${c.r0(c.m.deep)}% deep (target ≥15%)`:null,
+ action:'Train earlier; cool room; zero alcohol on training nights; finish meals ≥3h pre-bed.',
+ evidence:'GH pulses occur in slow-wave sleep — key for tissue repair (Van Cauter 2000); alcohol suppresses SWS (Ebrahim 2013)'},
+{cat:'P',pri:2,icon:'⚖️',title:'High intensity + high stress = blunted adaptation',
+ test:c=>c.stress7!=null&&c.stress7>=30&&(c.m.z45||0)>40?`Avg stress ${c.r0(c.stress7)}/100 alongside ${c.r0(c.m.z45)} min Z4–5`:null,
+ action:'Pair every hard session with deliberate parasympathetic work: 10 min slow breathing or NSDR post-workout.',
+ evidence:'Sympathetic overload impairs training adaptation; HRV-guided balance restores it (Plews 2013)'},
+{cat:'P',pri:3,icon:'📊',title:'Movement slumped this week',
+ test:c=>c.steps7!=null&&c.m.avgSteps&&c.steps7<c.m.avgSteps*0.7?`7-day ${c.r0(c.steps7).toLocaleString()} vs 30-day ${c.r0(c.m.avgSteps).toLocaleString()} steps`:null,
+ action:'Reset with easy volume — daily walks count as active recovery and keep aerobic base ticking.',
+ evidence:'Even light activity breaks maintain insulin sensitivity vs sedentary dips (Dunstan 2012)'},
+
+// ════════ ORGAN SUPPORT (14) ════════
+{cat:'O',pri:2,icon:'🐟',title:'Heart: omega-3 intake low',
+ test:c=>c.gap('omega3_g')!=null?`~${(c.n7.omega3_g||0).toFixed(1)}g/day vs 1.6g target`:null,
+ action:'Fatty fish 2×/week or daily ground flax/chia; discuss EPA/DHA supplement if fish-averse.',
+ evidence:'EPA cut CV events 25% in REDUCE-IT (Bhatt 2019 NEJM); omega-3 lowers TG & resting HR'},
+{cat:'O',pri:2,icon:'🫀',title:'Heart: potassium low (BP lever)',
+ test:c=>c.gap('potassium_mg')!=null?`~${c.r0(c.n7.potassium_mg)}mg/day vs 3400mg target`:null,
+ action:'Banana, coconut water, potatoes, beans, spinach daily; potassium offsets sodium\'s BP effect.',
+ evidence:'Higher potassium intake lowers BP & stroke risk (Aburto 2013 BMJ meta-analysis)'},
+{cat:'O',pri:2,icon:'🫘',title:'Liver: cut its workload',
+ test:c=>{const a=c.gap('fiber_g')!=null,b=c.cov('calories')!=null&&c.cov('calories')>110;return(a&&b)?'Low fiber + calorie surplus pattern — classic NAFLD risk combo':a?'Low fiber intake pattern':null},
+ action:'Biggest levers: no sugary drinks, limit refined carbs & late-night meals, 150+ min/wk exercise, alcohol minimal. Coffee 2–3 cups/day is protective.',
+ evidence:'Exercise reduces hepatic fat independent of weight (Hashida 2017); coffee lowers NAFLD/fibrosis risk (Kennedy 2017 BMJ)'},
+{cat:'O',pri:2,icon:'🩸',title:'Pancreas/insulin: blunt your glucose spikes',
+ test:c=>{const carbsHigh=c.cov('carbs_g')!=null&&c.cov('carbs_g')>110,stepsLow=(c.m.avgSteps||9e9)<8000;return carbsHigh&&stepsLow?`Carbs ~${c.r0(c.n7.carbs_g)}g/day + ${c.r0(c.m.avgSteps).toLocaleString()} steps/day`:null},
+ action:'10–15 min walk after your two biggest meals; eat veg/protein before rice; keep refined carbs to post-workout.',
+ evidence:'Post-meal walking lowers postprandial glucose ~12–22% (Reynolds 2016); food-order effect (Shukla 2015)'},
+{cat:'O',pri:3,icon:'💧',title:'Kidneys: hydration + whole-food potassium',
+ test:c=>c.gap('potassium_mg')!=null||((c.m.avgSteps||0)>8000&&true)?'Active training load — kidneys handle solute clearance':null,
+ action:'~2.5–3L fluid/day in training; whole-food potassium; go easy on packaged-food sodium; avoid regular NSAID use around hard sessions.',
+ evidence:'Adequate hydration & low sodium support kidney function (Clark 2016 CJASN); NSAIDs + dehydration risk AKI'},
+{cat:'O',pri:2,icon:'🦠',title:'Gut: feed the microbiome',
+ test:c=>c.gap('fiber_g')!=null?`Fiber ~${c.r0(c.n7.fiber_g)}g/day vs 38g`:null,
+ action:'Target 30 different plants/week; add fermented foods daily (curd/yogurt, idli/dosa batter, pickles, kanji).',
+ evidence:'Fermented foods increased microbiome diversity & lowered 19 inflammatory markers (Wastyk 2021 Cell)'},
+{cat:'O',pri:3,icon:'🦴',title:'Bones: calcium below target',
+ test:c=>c.gap('calcium_mg')!=null?`~${c.r0(c.n7.calcium_mg)}mg/day vs 1000mg RDA`:null,
+ action:'2–3 daily servings: dairy/curd, ragi, sesame, leafy greens, tofu.',
+ evidence:'Adequate calcium + vitamin D underpin peak bone mass (Weaver 2016 NOF position)'},
+{cat:'O',pri:3,icon:'☀️',title:'Bones/immunity: vitamin D minimal in diet',
+ test:c=>c.gap('vitamin_d_iu')!=null?`~${c.r0(c.n7.vitamin_d_iu)} IU/day logged vs 600 IU`:null,
+ action:'15–20 min midday sun on arms most days; worth testing 25(OH)D once and discussing supplementation — deficiency is very common in South Asia.',
+ evidence:'Vitamin D supports bone, muscle & immune function (Endocrine Society 2011); high deficiency prevalence in India (~70–90% in urban studies)'},
+{cat:'O',pri:3,icon:'🏋️',title:'Bones: no loading stimulus',
+ test:c=>(c.m.strengthMinutes||0)<30?`${c.r0(c.m.strengthMinutes)} min resistance work in 30 days`:null,
+ action:'Bone adapts to load: heavy(ish) lower-body lifts + impact (jumps, skipping, stairs) 2×/week.',
+ evidence:'High-intensity loading safely built spine/hip BMD (LIFTMOR trial, Watson 2018 JBMR)'},
+{cat:'O',pri:2,icon:'🥛',title:'B12 low — nerves & blood',
+ test:c=>c.gap('vitamin_b12_ug')!=null?`~${(c.n7.vitamin_b12_ug||0).toFixed(1)}µg/day vs 2.4µg RDA`:null,
+ action:'Daily dairy/eggs; if largely plant-based, B12 supplementation is essentially mandatory — discuss dosing with your doctor.',
+ evidence:'B12 deficiency causes irreversible neuropathy if prolonged; common in vegetarian diets (Smith 2010)'},
+{cat:'O',pri:3,icon:'🍊',title:'Immune: vitamin C / zinc gaps',
+ test:c=>{const a=c.gap('vitamin_c_mg'),b=c.gap('zinc_mg');return a!=null||b!=null?[a!=null?`Vit C ${c.r0(c.cov('vitamin_c_mg'))}%`:null,b!=null?`Zinc ${c.r0(c.cov('zinc_mg'))}%`:null].filter(Boolean).join(' · ')+' of RDA':null},
+ action:'Citrus/amla/guava + seeds/legumes daily; zinc lozenges shorten colds if started early.',
+ evidence:'Zinc lozenges reduce cold duration ~33% (Hemilä 2017); vitamin C reduces duration ~8–14% in regular use'},
+{cat:'O',pri:2,icon:'🛡️',title:'Immune: short sleep triples infection risk',
+ test:c=>c.sleepAvg7!=null&&c.sleepAvg7<6.5?`7-day avg ${c.r1(c.sleepAvg7)}h`:null,
+ action:'Treat sleep as your primary immune intervention this week — everything else is secondary.',
+ evidence:'<6h sleepers were 4.2× more likely to catch a cold than >7h (Prather 2015 Sleep)'},
+{cat:'O',pri:3,icon:'🫁',title:'Lungs & vagus: daily slow breathing',
+ test:c=>c.stress7!=null&&c.stress7>=25?`7-day avg stress level ${c.r0(c.stress7)}/100`:null,
+ action:'5–10 min nasal breathing at ~6 breaths/min (4s in, 6s out) — improves HRV, BP and respiratory efficiency.',
+ evidence:'Slow-paced breathing raises baroreflex sensitivity & vagal tone (Lehrer & Gevirtz 2014)'},
+{cat:'O',pri:3,icon:'🌿',title:'Heart: folate low (homocysteine)',
+ test:c=>c.gap('folate_ug')!=null?`~${c.r0(c.n7.folate_ug)}µg/day vs 400µg RDA`:null,
+ action:'Daily greens, legumes, citrus — folate keeps homocysteine (a vascular irritant) in range.',
+ evidence:'Elevated homocysteine associates with CVD & stroke risk (Homocysteine Studies Collaboration 2002 JAMA)'},
+
+// ════════ BRAIN & MENTAL HEALTH (12) ════════
+{cat:'B',pri:1,icon:'🧠',title:'Sleep is your memory & brain-clearance window',
+ test:c=>c.m.avgSleep!=null&&c.m.avgSleep<7?`30-day avg ${c.r1(c.m.avgSleep)}h`:null,
+ action:'Memory consolidation and glymphatic amyloid clearance both need 7h+; protect the last 90 min of sleep (REM-heavy).',
+ evidence:'Sleep drives glymphatic clearance of β-amyloid (Xie 2013 Science); poor sleep ↔ Alzheimer\'s pathology (Mander 2017)'},
+{cat:'B',pri:2,icon:'🏃',title:'Aerobic exercise literally grows the hippocampus',
+ test:c=>{const low=(c.m.avgSteps||0)<8000&&(c.m.mvpaEq||0)<645;return low?`Steps ${c.r0(c.m.avgSteps).toLocaleString()}/day, aerobic ${c.r0(c.m.mvpaEq)} MVPA-eq min/30d`:null},
+ action:'3× 40-min moderate cardio/week — the best-evidenced intervention for memory and processing speed.',
+ evidence:'1 year aerobic training increased hippocampal volume 2% & memory (Erickson 2011 PNAS)'},
+{cat:'B',pri:2,icon:'🐟',title:'Omega-3 for mood',
+ test:c=>c.gap('omega3_g')!=null?`~${(c.n7.omega3_g||0).toFixed(1)}g/day vs 1.6g`:null,
+ action:'EPA-rich intake (fish 2×/wk or supplement discussed with doctor) — strongest effect when EPA>DHA.',
+ evidence:'EPA-predominant omega-3 reduces depressive symptoms (Liao 2019 meta-analysis)'},
+{cat:'B',pri:2,icon:'🥗',title:'Diet quality is a mental-health intervention',
+ test:c=>c.gap('fiber_g')!=null?`Fiber ~${c.r0(c.n7.fiber_g)}g/day — proxy for whole-food intake`:null,
+ action:'Shift toward a Mediterranean-style pattern: vegetables, legumes, whole grains, nuts, fish, olive oil.',
+ evidence:'Dietary improvement reduced depression scores in RCT (SMILES, Jacka 2017); diet ↔ mental health meta (Firth 2019)'},
+{cat:'B',pri:1,icon:'🧘',title:'High stress: add a daily mindfulness block',
+ test:c=>c.stress7!=null&&c.stress7>=35?`7-day avg stress level ${c.r0(c.stress7)}/100`:null,
+ action:'10 min/day guided mindfulness or NSDR — effect sizes for anxiety rival first-line treatments at 8 weeks.',
+ evidence:'Mindfulness programs improve anxiety/depression (Goyal 2014 JAMA-IM meta-analysis)'},
+{cat:'B',pri:2,icon:'💨',title:'Suppressed HRV: breathwork is the fastest lever',
+ test:c=>c.m.latestHrv!=null&&c.m.hrv&&c.m.latestHrv<c.m.hrv*0.85?`Overnight HRV ${c.r0(c.m.latestHrv)} vs avg ${c.r0(c.m.hrv)}`:null,
+ action:'2× daily physiological sighs (double inhale, long exhale) or 5 min at 6 breaths/min.',
+ evidence:'Slow breathing acutely raises vagal tone & reduces anxiety (Lehrer & Gevirtz 2014)'},
+{cat:'B',pri:2,icon:'🌅',title:'Late nights are shifting your clock',
+ test:c=>c.lateNights>=3?`${c.lateNights} nights past 00:30 this week`:null,
+ action:'Get 10+ min outdoor light within 1h of waking (it phase-advances your clock); dim screens after 22:00.',
+ evidence:'Light is the dominant circadian cue; circadian disruption worsens mood (LeGates 2014 Nat Rev Neuro)'},
+{cat:'B',pri:2,icon:'🧪',title:'B12/folate gap — cognition link',
+ test:c=>{const a=c.gap('vitamin_b12_ug'),b=c.gap('folate_ug');return a!=null||b!=null?'B-vitamin intake below target (see Organ Support for sources)':null},
+ action:'These regulate homocysteine, which associates with brain atrophy; food first, test levels if persistent.',
+ evidence:'B-vitamin treatment slowed brain atrophy in high-homocysteine MCI (Smith 2010 PLoS ONE)'},
+{cat:'B',pri:3,icon:'🏋️',title:'Strength training reduces anxiety & depression',
+ test:c=>(c.m.strengthMinutes||0)<60?`${c.r0(c.m.strengthMinutes)} min in 30 days`:null,
+ action:'2 sessions/week — mood benefits appear regardless of load or muscle gain.',
+ evidence:'Resistance training reduces anxiety (Gordon 2017) and depressive symptoms (Gordon 2018 JAMA Psych meta-analyses)'},
+{cat:'B',pri:3,icon:'🌳',title:'Take the stress outside',
+ test:c=>c.stress7!=null&&c.stress7>=25?`7-day avg stress level ${c.r0(c.stress7)}/100`:null,
+ action:'20-min "nature pill" (park walk, no phone) 3×/week measurably drops cortisol.',
+ evidence:'20–30 min nature contact lowered salivary cortisol most efficiently (Hunter 2019 Front Psychol)'},
+{cat:'B',pri:2,icon:'🔁',title:'Irregular sleep ↔ mood instability',
+ test:c=>c.m.sleepConsistency!=null&&c.m.sleepConsistency<55?`Consistency ${c.r0(c.m.sleepConsistency)}/100`:null,
+ action:'Mood tracks circadian regularity even more than duration in large cohorts — anchor wake time daily.',
+ evidence:'Circadian disruption associated with depression & worse wellbeing in 91k-person cohort (Lyall 2018 Lancet Psych)'},
+{cat:'B',pri:3,icon:'🥜',title:'Magnesium low — sleep & anxiety support',
+ test:c=>c.gap('magnesium_mg')!=null?`~${c.r0(c.n7.magnesium_mg)}mg/day vs 400mg RDA`:null,
+ action:'30g nuts/seeds + leafy greens + whole grains daily; evening intake may aid sleep onset.',
+ evidence:'Magnesium supplementation shows modest benefits for anxiety & sleep quality (Boyle 2017; Zhang 2021)'},
+];
+function buildRecommendations(){
+  const c=recContext();
+  const fired=[];
+  for(const r of HCP_RULES){
+    let why=null;
+    try{why=r.test(c)}catch(e){console.warn('rec rule failed:',r.title,e)}
+    if(why)fired.push({...r,why});
+  }
+  fired.sort((a,b)=>a.pri-b.pri);
+  return {fired,total:HCP_RULES.length};
+}
+function recommendationsHTML(){
+  const {fired,total}=buildRecommendations();
+  if(!fired.length)return '';
+  const byCat={};fired.forEach(r=>{(byCat[r.cat]=byCat[r.cat]||[]).push(r)});
+  const PRI_LBL={1:'priority',2:'this week',3:'build up'};
+  const PRI_COL={1:'var(--red)',2:'var(--amber)',3:'var(--txt2)'};
+  return `<div class="card" style="margin-top:12px">
+    <h2 style="margin-bottom:4px">Recommendations <span class="muted small" style="font-size:11px;font-weight:400">${fired.length} of ${total} presets triggered · evidence-based · not medical advice</span></h2>
+    ${Object.keys(REC_CATS).filter(k=>byCat[k]).map(k=>{
+      const cat=REC_CATS[k],recs=byCat[k].slice(0,6);
+      return `<div style="margin-top:14px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:${cat.color};display:flex;align-items:center;gap:6px">${cat.icon} ${cat.name} <span style="font-weight:400;color:var(--txt3);text-transform:none;letter-spacing:0">· ${byCat[k].length} active</span></div>
+        ${recs.map(r=>`<div style="padding:10px 0;border-bottom:1px solid var(--b)">
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+            <span>${r.icon}</span><b style="font-size:13px">${r.title}</b>
+            <span class="tiny" style="color:${PRI_COL[r.pri]};font-size:10px;text-transform:uppercase;letter-spacing:.5px">${PRI_LBL[r.pri]}</span>
+          </div>
+          <div class="tiny muted" style="margin:3px 0 5px;font-size:11px">Trigger: ${r.why}</div>
+          <div style="font-size:13px;line-height:1.5">${r.action}</div>
+          <div class="tiny" style="margin-top:4px;font-size:10px;color:var(--txt3)">📚 ${r.evidence}</div>
+        </div>`).join('')}
+      </div>`}).join('')}
+  </div>`;
+}
+function metricLine(name,score,color){return `<div class="metric" style="margin:10px 0"><span class="dot" style="background:${color}"></span><div class="name">${name}</div><b>${score??'—'}</b></div><div class="score"><span style="width:${score??0}%;background:${color}"></span></div>`}
+function whoopMetricStatus(key,val,target,unit=''){
+  // Returns {label, value, status: 'good'|'warn'|'bad'|'na', note}
+  const v=val??state.metrics[key]??state.manual[key];
+  if(v==null) return {label:key,value:'—',status:'na',note:'No data'};
+  const fmt=typeof v==='number'?`${Math.round(v*10)/10}${unit}`:v;
+  return {value:fmt,status:scoreFor(key)>=75?'good':scoreFor(key)>=45?'warn':'bad'};
+}
+function viewHealth(a){
+  const m=state.metrics;
+  // WHOOP's 9 healthspan metrics with 30-day context
+  const nineMetrics=[
+    {name:'Sleep Duration',   val:m.avgSleep?Math.round(m.avgSleep*10)/10+'h avg':'—', target:'7–9h', good:m.avgSleep>=7, ok:m.avgSleep>=6},
+    {name:'Sleep Consistency',val:m.sleepConsistency?Math.round(m.sleepConsistency)+'%':'—', target:'≥70%',good:m.sleepConsistency>=70,ok:m.sleepConsistency>=50},
+    {name:'Daily Steps',      val:m.avgSteps?Math.round(m.avgSteps).toLocaleString()+' avg':'—',    target:'≥8k', good:m.avgSteps>=8000,      ok:m.avgSteps>=5000},
+    {name:'Aerobic (WHO-eq)', val:m.mvpaEq!=null?Math.round(m.mvpaEq)+'min (30d)':'—',target:'≥645min',good:m.mvpaEq>=645,      ok:m.mvpaEq>=320},
+    {name:'Zone 4–5 Min',     val:m.z45!=null?Math.round(m.z45)+'min (30d)':'—',target:'≥300min',   good:m.z45>=300,            ok:m.z45>=120},
+    {name:'Strength Time',    val:m.strengthMinutes!=null?Math.round(m.strengthMinutes)+'min (30d)':'—',target:'≥60min',good:m.strengthMinutes>=60,ok:m.strengthMinutes>=30},
+    {name:'VO₂ Max',          val:m.vo2?m.vo2+' ml/kg/min':'No data',           target:'≥40',       good:m.vo2>=40,             ok:m.vo2>=35},
+    {name:'Resting HR',       val:m.rhr?Math.round(m.rhr)+' bpm':'—',           target:'≤60',       good:m.rhr<=60,             ok:m.rhr<=70},
+    {name:'Lean Body Mass',   val:m.leanKg?m.leanKg+'kg ('+m.leanMass+'%)':'No scale data',target:'≥75%', good:m.leanMass>=75,ok:m.leanMass>=65},
+  ];
+  const nineHtml=nineMetrics.map(x=>{
+    const color=x.val==='—'||x.val.includes('No')?'var(--txt3)':x.good?'var(--green)':x.ok?'var(--amber)':'var(--red)';
+    return `<div class="card" style="background:var(--s2);padding:14px"><div style="font-size:10px;color:var(--txt3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">${x.name}</div><div style="font-size:15px;font-weight:600;color:${color}">${x.val}</div><div style="font-size:10px;color:var(--txt3);margin-top:3px">target ${x.target}</div></div>`;
+  }).join('');
+
+  return `
+<div class="grid cols2">
+  <div class="card">
+    <h2>Healthspan age model</h2>
+    <div class="age ${a.age>a.chrono+4?'bad':a.age>a.chrono+1?'warn':'good'}">${a.age}</div>
+    <p class="muted">Chronological age ${a.chrono} · DOB ${state.profile?.userData?.birthDate||'not connected'}</p>
+    <p class="muted small" style="margin-top:6px">Based on 30-day rolling averages across WHOOP's 9 healthspan metrics</p>
+  </div>
+  <div class="card">
+    <h2>Age deltas (30-day avg)</h2>
+    ${a.del.map(d=>`<div class="deltaRow"><span>${d[0]}</span><div class="bar"><span style="width:${Math.min(100,Math.abs(d[1])*22)}%;background:${d[1]>0?COLORS.bad:COLORS.good}"></span></div><b class="${d[1]>0?'badC':'goodC'}">${d[1]>0?'+':''}${d[1].toFixed(1)}y</b></div>`).join('')}
+  </div>
+</div>
+<div class="card" style="margin-top:12px">
+  <h2>WHOOP's 9 Healthspan metrics <span class="pill small" style="font-size:11px;vertical-align:middle">${state.sleep.length}d sleep · ${state.steps.length}d steps</span></h2>
+  <div class="grid cols3" style="gap:8px;margin-top:12px">${nineHtml}</div>
+</div>
+<div class="card" style="margin-top:12px">
+  <h2>All Garmin readings (30-day avg)</h2>
+  <div class="grid cols4">${[
+    ['HRV',m.hrv?Math.round(m.hrv):'—'],['Body Battery',m.bodyBattery?Math.round(m.bodyBattery):'—'],
+    ['Deep %',m.deep?Math.round(m.deep*10)/10:'—'],['REM %',m.rem?Math.round(m.rem*10)/10:'—'],
+    ['Sleep score',m.sleepScore?Math.round(m.sleepScore):'—'],['Zone 1–3 min',m.z13?Math.round(m.z13):'—'],
+    ['Zone 4–5 min',m.z45?Math.round(m.z45):'—'],['VO₂ Max',m.vo2?m.vo2:'—'],
+    ['Stress drain/d',m.stressDrain!=null?Math.round(m.stressDrain):'—'],['Lean mass',m.leanKg?m.leanKg+'kg':'—'],
+    ['Weight',state.bodyComp?.weight_kg?state.bodyComp.weight_kg+'kg':'—'],['Body fat',state.bodyComp?.body_fat?state.bodyComp.body_fat+'%':'—']
+  ].map(x=>`<div class="card" style="background:var(--s2)"><h3>${x[0]}</h3><b style="font-size:22px">${x[1]}</b></div>`).join('')}
+  </div>
+</div>
+<div class="card" style="margin-top:12px">
+  <h2>Trends — 30 days</h2>
+  <div class="chart-grid">
+    <div class="chart-inner"><h3>Sleep Duration (h)</h3><canvas id="chartSleep"></canvas></div>
+    <div class="chart-inner"><h3>Sleep Score</h3><canvas id="chartSleepScore"></canvas></div>
+    <div class="chart-inner"><h3>HRV — overnight avg</h3><canvas id="chartHrv"></canvas></div>
+    <div class="chart-inner"><h3>Daily Steps</h3><canvas id="chartSteps"></canvas></div>
+    <div class="chart-inner"><h3>Body Battery — charged</h3><canvas id="chartBb"></canvas></div>
+    <div class="chart-inner"><h3>Daily Stress Drain (BB pts)</h3><canvas id="chartStress"></canvas></div>
+  </div>
+</div>`}
+function viewMatrix(){return `<div class="matrix">${domainScores().map(d=>`<div class="domain"><div class="domainTop"><div><h2 style="color:${d.color};font-size:16px;margin:0">${d.name}</h2><span class="muted tiny">${d.metrics.length} tracked inputs</span></div><div class="domainScore" style="color:${d.color}">${d.score??'—'}</div></div><div class="score" style="margin:10px 0"><span style="width:${d.score??0}%;background:${d.color}"></span></div>${d.metrics.map(m=>{const s=scoreFor(m.key);return `<div class="component"><div class="componentRow"><span>${m.name}</span><span class="tag ${m.source}">${m.source}</span></div><div class="score"><span style="width:${s??0}%;background:${d.color}"></span></div><div class="muted tiny" style="margin-top:3px">${m.note}</div></div>`}).join('')}</div>`).join('')}</div>`}
+// ─── Body map: anatomy SVG (3 layers) + tissue intelligence panel ────────────
+const TISSUE_INFO={
+  'Chest':{sys:'Push chain',fix:'Bench press, push-ups or dips — 2×/week, 6–10 working sets.'},
+  'Front Delts':{sys:'Push chain',fix:'Overhead press or incline push work covers these with chest training.'},
+  'Triceps':{sys:'Push chain',fix:'Dips, close-grip press or pushdowns — 4–6 sets/week.'},
+  'Biceps':{sys:'Pull chain',fix:'Rows and curls — biceps grow with any consistent pulling volume.'},
+  'Forearms':{sys:'Grip',fix:'Heavy carries and dead-hangs; grip strength independently predicts longevity.'},
+  'Lats':{sys:'Pull chain',fix:'Pull-ups, lat pulldown or rows — 2×/week. Balances pressing volume.'},
+  'Rear Delts':{sys:'Pull chain / posture',fix:'Face pulls or reverse flys 3×15 — cheap insurance for shoulder health.'},
+  'Traps':{sys:'Pull chain / posture',fix:'Shrugs, carries and rows; upper-back strength supports neck posture.'},
+  'Core':{sys:'Trunk stability',fix:'Planks, dead-bugs, loaded carries — 3 short rounds, 3×/week.'},
+  'Hip Flexors':{sys:'Gait & posture',fix:'Often tight from sitting: couch stretch daily + hanging knee raises.'},
+  'Lower Back':{sys:'Posterior chain',fix:'Hinge patterns (RDL, back extension) build resilience; avoid total rest.'},
+  'Glutes':{sys:'Posterior chain',fix:'Hip thrusts, squats, lunges — the engine of running and lifting.'},
+  'Quads':{sys:'Lower body',fix:'Squats, lunges, cycling, stairs — knee health depends on quad strength.'},
+  'Hamstrings':{sys:'Posterior chain',fix:'RDLs and Nordic curls cut hamstring-injury risk dramatically.'},
+  'Calves':{sys:'Lower leg',fix:'Standing calf raises + skipping; tendon stiffness aids running economy.'},
+  'Heart':{sys:'Cardiovascular',fix:'Zone 2 ≥150 min/wk + 1 interval session; omega-3 and potassium support BP.'},
+  'Lungs':{sys:'Respiratory',fix:'Zone 2 builds aerobic capacity; daily slow nasal breathing trains efficiency.'},
+  'Brain':{sys:'Neuro / cognition',fix:'Aerobic exercise, 7h+ sleep, omega-3 and B-vitamins — all evidence-backed.'},
+  'Liver':{sys:'Metabolic clearance',fix:'No sugary drinks, minimal alcohol, 150+ min/wk exercise, coffee is protective.'},
+  'Kidneys':{sys:'Filtration',fix:'2.5–3L fluids on training days, moderate sodium, easy on NSAIDs.'},
+  'Pancreas':{sys:'Glucose control',fix:'Post-meal walks, fiber first at meals, keep refined carbs near workouts.'},
+  'Gut':{sys:'Digestion / microbiome',fix:'30 plant varieties/week + daily fermented foods (curd, idli, pickles).'},
+};
+function bodySvg(view='front'){
+  const M=state.body.M||{};
+  const g=k=>{const n=M[k]||0;return n===0?'url(#tBad)':n<=2?'url(#tWarn)':'url(#tGood)'};
+  const DEFS=`<defs>
+    <linearGradient id="tGood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9BEFC4"/><stop offset="1" stop-color="#5FD89B"/></linearGradient>
+    <linearGradient id="tWarn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FDE5A7"/><stop offset="1" stop-color="#F3C566"/></linearGradient>
+    <linearGradient id="tBad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBD7D2"/><stop offset="1" stop-color="#F0ACA3"/></linearGradient>
+    <linearGradient id="ghost" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EEF2F7"/><stop offset="1" stop-color="#E5EBF2"/></linearGradient>
+  </defs>`;
+  // Shared smooth silhouette (front orientation; arms slightly abducted)
+  const SIL=`<path class="sil" d="M220 26 C248 26 266 46 266 72 C266 92 258 106 246 114 L246 126 C284 132 312 146 322 168 C330 184 332 200 330 220 L334 296 L322 422 C320 436 316 446 318 458 L320 470 C320 478 310 482 306 474 L300 452 L296 430 L284 300 L282 226 C280 240 278 280 278 300 L270 330 C268 360 276 382 286 404 L290 470 L288 540 L276 608 L282 654 L262 726 C268 736 268 744 258 746 L240 744 C234 738 236 728 240 720 L238 660 L232 612 L228 528 L220 470 L212 528 L208 612 L202 660 L200 720 C204 728 206 738 200 744 L182 746 C172 744 172 736 178 726 L158 654 L164 608 L152 540 L150 470 L154 404 C164 382 172 360 170 330 L162 300 C162 280 160 240 158 226 L156 300 L144 430 L140 452 L134 474 C130 482 120 478 120 470 L122 458 C124 446 120 436 118 422 L106 296 L110 220 C108 200 110 184 118 168 C128 146 156 132 194 126 L194 114 C182 106 174 92 174 72 C174 46 192 26 220 26 Z" fill="url(#ghost)" stroke="rgba(16,24,40,.10)" stroke-width="1.5"/>`;
+  const open=`<svg viewBox="0 0 440 770" width="100%" style="max-width:430px" role="img" aria-label="Body focus map — ${view} view">${DEFS}${SIL}`;
+  const close=`</svg>`;
+  const T=(k,shape)=>shape.replace('<','<').replace(/^<(\w+)/,`<$1 class="muscle" data-m="${k}" fill="${g(k)}"`);
+  const lbl=(x,y,t,anchor='middle')=>`<text class="organLabel" x="${x}" y="${y}" text-anchor="${anchor}">${t}</text>`;
+  const lead=(x1,y1,x2,y2)=>`<line class="leader" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+
+  if(view==='organs')return open+`
+    ${lbl(220,14,'ORGANS & SYSTEMS — DEEP VIEW')}
+    <path class="muscle organShape" data-m="Brain" fill="${g('Brain')}" d="M186 62 C186 42 202 32 220 32 C238 32 254 42 254 62 C254 78 244 90 232 92 L228 84 Q220 92 212 84 L208 92 C196 90 186 78 186 62 Z"/>
+    <path class="organDetail" d="M220 36 L220 88 M196 50 Q210 58 206 74 M244 50 Q230 58 234 74" fill="none"/>
+    ${lead(254,62,330,62)}${lbl(334,66,'BRAIN','start')}
+    <path class="organDetail" d="M220 118 L220 182 M212 182 L228 182" fill="none"/>
+    <path class="muscle organShape" data-m="Lungs" fill="${g('Lungs')}" d="M206 186 Q176 192 168 240 Q164 286 198 300 Q210 294 210 246 Q210 198 206 186 Z"/>
+    <path class="muscle organShape" data-m="Lungs" fill="${g('Lungs')}" d="M234 186 Q264 192 272 240 Q276 286 242 300 Q230 294 230 246 Q230 198 234 186 Z"/>
+    <path class="organDetail" d="M192 220 Q200 228 196 244 M248 220 Q240 228 244 244" fill="none"/>
+    ${lead(272,238,330,238)}${lbl(334,242,'LUNGS','start')}
+    <path class="muscle organShape" data-m="Heart" fill="${g('Heart')}" d="M226 232 C218 218 196 224 200 244 C204 262 230 278 232 280 C238 274 256 260 258 242 C260 224 240 218 232 230 C230 226 228 228 226 232 Z"/>
+    <path class="organDetail" d="M226 226 Q232 214 244 216" fill="none"/>
+    ${lead(202,244,110,210)}${lbl(106,214,'HEART','end')}
+    <path class="muscle organShape" data-m="Liver" fill="${g('Liver')}" d="M158 310 Q214 296 246 308 Q244 342 198 352 Q162 344 158 310 Z"/>
+    <path class="organDetail" d="M170 318 Q200 312 232 314" fill="none"/>
+    ${lead(160,322,110,322)}${lbl(106,326,'LIVER','end')}
+    <path class="muscle organShape" data-m="Pancreas" fill="${g('Pancreas')}" d="M204 360 Q248 348 280 360 Q254 374 208 370 Q200 366 204 360 Z"/>
+    ${lead(278,360,330,360)}${lbl(334,364,'PANCREAS','start')}
+    <path class="muscle organShape" data-m="Kidneys" fill="${g('Kidneys')}" d="M178 376 Q162 380 162 400 Q162 420 178 424 Q188 420 186 400 Q188 380 178 376 Z"/>
+    <path class="muscle organShape" data-m="Kidneys" fill="${g('Kidneys')}" d="M262 376 Q278 380 278 400 Q278 420 262 424 Q252 420 254 400 Q252 380 262 376 Z"/>
+    ${lead(162,400,110,400)}${lbl(106,404,'KIDNEYS','end')}
+    <path class="muscle organShape" data-m="Gut" fill="${g('Gut')}" d="M178 432 Q220 420 262 432 Q278 462 258 490 Q220 504 182 490 Q162 462 178 432 Z"/>
+    <path class="organDetail" d="M184 446 Q220 438 256 446 M182 462 Q220 454 258 462 M188 478 Q220 470 252 478" fill="none"/>
+    ${lead(262,470,330,470)}${lbl(334,474,'GUT','start')}
+  `+close;
+
+  if(view==='back')return open+`
+    ${lbl(220,14,'POSTERIOR CHAIN')}
+    <path class="muscle" data-m="Traps" fill="${g('Traps')}" d="M220 116 Q252 128 268 152 Q244 188 220 204 Q196 188 172 152 Q188 128 220 116 Z"/>
+    <ellipse class="muscle" data-m="Rear Delts" fill="${g('Rear Delts')}" cx="136" cy="178" rx="25" ry="33" transform="rotate(-16 136 178)"/>
+    <ellipse class="muscle" data-m="Rear Delts" fill="${g('Rear Delts')}" cx="304" cy="178" rx="25" ry="33" transform="rotate(16 304 178)"/>
+    <path class="muscle" data-m="Lats" fill="${g('Lats')}" d="M170 200 Q204 222 212 228 L208 326 Q184 314 166 276 Q162 234 170 200 Z"/>
+    <path class="muscle" data-m="Lats" fill="${g('Lats')}" d="M270 200 Q236 222 228 228 L232 326 Q256 314 274 276 Q278 234 270 200 Z"/>
+    <rect class="muscle" data-m="Lower Back" fill="${g('Lower Back')}" x="202" y="298" width="15" height="106" rx="7"/>
+    <rect class="muscle" data-m="Lower Back" fill="${g('Lower Back')}" x="223" y="298" width="15" height="106" rx="7"/>
+    <rect class="muscle" data-m="Triceps" fill="${g('Triceps')}" x="112" y="214" width="34" height="98" rx="17"/>
+    <rect class="muscle" data-m="Triceps" fill="${g('Triceps')}" x="294" y="214" width="34" height="98" rx="17"/>
+    <rect class="muscle" data-m="Forearms" fill="${g('Forearms')}" x="116" y="324" width="28" height="100" rx="14"/>
+    <rect class="muscle" data-m="Forearms" fill="${g('Forearms')}" x="296" y="324" width="28" height="100" rx="14"/>
+    <path class="muscle" data-m="Glutes" fill="${g('Glutes')}" d="M174 408 Q216 398 218 428 L214 470 Q182 480 168 450 Q166 424 174 408 Z"/>
+    <path class="muscle" data-m="Glutes" fill="${g('Glutes')}" d="M266 408 Q224 398 222 428 L226 470 Q258 480 272 450 Q274 424 266 408 Z"/>
+    <path class="muscle" data-m="Hamstrings" fill="${g('Hamstrings')}" d="M160 486 Q182 474 202 488 L198 592 Q180 606 164 592 Z"/>
+    <path class="muscle" data-m="Hamstrings" fill="${g('Hamstrings')}" d="M280 486 Q258 474 238 488 L242 592 Q260 606 276 592 Z"/>
+    <path class="muscle" data-m="Calves" fill="${g('Calves')}" d="M166 618 Q182 606 198 620 L194 700 Q180 710 170 700 Z"/>
+    <path class="muscle" data-m="Calves" fill="${g('Calves')}" d="M274 618 Q258 606 242 620 L246 700 Q260 710 270 700 Z"/>
+  `+close;
+
+  // front (default): muscle layer
+  return open+`
+    ${lbl(220,14,'ANTERIOR MUSCLES')}
+    <path class="muscle" data-m="Traps" fill="${g('Traps')}" d="M188 130 Q220 118 252 130 L242 150 Q220 142 198 150 Z"/>
+    <ellipse class="muscle" data-m="Front Delts" fill="${g('Front Delts')}" cx="136" cy="176" rx="25" ry="33" transform="rotate(-16 136 176)"/>
+    <ellipse class="muscle" data-m="Front Delts" fill="${g('Front Delts')}" cx="304" cy="176" rx="25" ry="33" transform="rotate(16 304 176)"/>
+    <path class="muscle" data-m="Chest" fill="${g('Chest')}" d="M158 160 Q212 148 216 168 L216 224 Q172 236 152 206 Q150 180 158 160 Z"/>
+    <path class="muscle" data-m="Chest" fill="${g('Chest')}" d="M282 160 Q228 148 224 168 L224 224 Q268 236 288 206 Q290 180 282 160 Z"/>
+    <rect class="muscle" data-m="Biceps" fill="${g('Biceps')}" x="116" y="212" width="32" height="96" rx="16"/>
+    <rect class="muscle" data-m="Biceps" fill="${g('Biceps')}" x="292" y="212" width="32" height="96" rx="16"/>
+    <rect class="muscle" data-m="Triceps" fill="${g('Triceps')}" x="103" y="222" width="14" height="96" rx="7"/>
+    <rect class="muscle" data-m="Triceps" fill="${g('Triceps')}" x="323" y="222" width="14" height="96" rx="7"/>
+    <rect class="muscle" data-m="Forearms" fill="${g('Forearms')}" x="114" y="322" width="30" height="102" rx="15"/>
+    <rect class="muscle" data-m="Forearms" fill="${g('Forearms')}" x="296" y="322" width="30" height="102" rx="15"/>
+    <path class="muscle" data-m="Lats" fill="${g('Lats')}" d="M162 234 Q168 300 178 334 L194 340 Q188 282 190 242 Z"/>
+    <path class="muscle" data-m="Lats" fill="${g('Lats')}" d="M278 234 Q272 300 262 334 L246 340 Q252 282 250 242 Z"/>
+    <path class="muscle" data-m="Core" fill="${g('Core')}" d="M198 246 Q220 240 242 246 L238 414 Q220 422 202 414 Z"/>
+    <path class="organDetail" d="M201 290 L239 290 M200 334 L240 334 M201 378 L239 378 M220 248 L220 416" fill="none" opacity=".5"/>
+    <path class="muscle" data-m="Hip Flexors" fill="${g('Hip Flexors')}" d="M184 412 Q206 420 212 438 L204 470 Q186 456 178 434 Z"/>
+    <path class="muscle" data-m="Hip Flexors" fill="${g('Hip Flexors')}" d="M256 412 Q234 420 228 438 L236 470 Q254 456 262 434 Z"/>
+    <path class="muscle" data-m="Quads" fill="${g('Quads')}" d="M158 452 Q182 438 204 456 L200 586 Q182 604 164 590 Q152 520 158 452 Z"/>
+    <path class="muscle" data-m="Quads" fill="${g('Quads')}" d="M282 452 Q258 438 236 456 L240 586 Q258 604 276 590 Q288 520 282 452 Z"/>
+    <path class="muscle" data-m="Calves" fill="${g('Calves')}" d="M168 620 Q181 610 194 622 L190 702 Q179 710 171 702 Z"/>
+    <path class="muscle" data-m="Calves" fill="${g('Calves')}" d="M272 620 Q259 610 246 622 L250 702 Q261 710 269 702 Z"/>
+  `+close;
+}
+function tissueStatus(n){return n===0?{t:'Untrained',cls:'badC',pill:'background:var(--red-bg);color:var(--red);border-color:#FECDCA'}:n<=2?{t:'Partially trained',cls:'warnC',pill:'background:var(--amber-bg);color:var(--amber);border-color:#FEDF89'}:{t:'Well trained',cls:'goodC',pill:'background:var(--green-bg);color:var(--green);border-color:#A6F4C5'}}
+function tissuePanelHTML(k){
+  if(!k)return `<h2>Tissue detail</h2><p class="muted small">Hover or tap any muscle or organ on the figure to see its training status, recent stimulus and the fastest way to improve it.</p>`;
+  const n=state.body.M?.[k]??0, info=TISSUE_INFO[k]||{sys:'',fix:''}, st=tissueStatus(n);
+  const hits=(state.body.log||[]).filter(l=>l.hit.includes(k)).slice(0,4);
+  return `<h2 style="margin-bottom:4px">${esc(k)}</h2>
+  <div class="tiny muted" style="margin-bottom:8px">${esc(info.sys)}</div>
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+    <span class="pill" style="${st.pill}">${st.t}</span>
+    <span class="tiny muted">${n} session${n!==1?'s':''} in current history</span>
+  </div>
+  <div class="tiny" style="font-weight:650;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Recent stimulus</div>
+  ${hits.length?hits.map(h=>`<div class="tiny" style="padding:4px 0;border-bottom:1px solid var(--b)"><b>${esc(h.name)}</b> <span class="muted">· ${esc(h.date)}</span></div>`).join(''):'<div class="tiny muted">Nothing in recent history targets this.</div>'}
+  <div class="tiny" style="font-weight:650;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;margin:10px 0 5px">How to improve</div>
+  <div class="small" style="line-height:1.55">${esc(info.fix)}</div>`;
+}
+function updateTissuePanel(k){window.__selTissue=k;const el=document.getElementById('tissuePanel');if(el)el.innerHTML=tissuePanelHTML(k);}
+function logManualActivity(){const inp=document.getElementById('actLog');if(!inp||!inp.value.trim())return;state.activities.unshift({name:inp.value,type:'strength',start_time:new Date().toISOString(),duration_seconds:2400,activityId:'manual_'+Date.now()});computeDerived();render();document.getElementById('actLogBox').classList.add('hidden');inp.value='';}
+function viewBody(){const M=state.body.M||{},sorted=Object.entries(M).sort((a,b)=>b[1]-a[1]);const view=localStorage.getItem('hos:bodyView')||'front';
+return `<div style="margin-bottom:10px;display:flex;gap:8px;align-items:center"><button class="btn secondary small" onclick="document.getElementById('actLogBox').classList.toggle('hidden')">+ Log Activity</button><span class="tiny muted">Adds to muscle focus map</span></div>
+<div id="actLogBox" class="hidden" style="margin-bottom:12px;padding:14px;background:var(--s2);border-radius:var(--r-sm);border:1px solid var(--b)"><input id="actLog" placeholder="e.g. Chest + shoulders strength, 45 min" style="margin-bottom:8px"><button class="btn small" onclick="logManualActivity()">Save to Body Map</button></div>
+<div class="bodyLayout"><div>
+<div class="seg"><button data-body-view="front" class="${view==='front'?'active':''}">Muscles · front</button><button data-body-view="organs" class="${view==='organs'?'active':''}">Organs & systems</button><button data-body-view="back" class="${view==='back'?'active':''}">Posterior chain</button></div>
+<div style="display:flex;gap:16px;margin-bottom:8px;align-items:center" class="tiny muted"><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:linear-gradient(#9BEFC4,#5FD89B);margin-right:5px;vertical-align:-1px"></span>≥3 sessions</span><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:linear-gradient(#FDE5A7,#F3C566);margin-right:5px;vertical-align:-1px"></span>1–2</span><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:linear-gradient(#FBD7D2,#F0ACA3);margin-right:5px;vertical-align:-1px"></span>None</span></div>
+<div class="figure">${bodySvg(view)}</div>
+</div><div class="grid">
+<div class="card" id="tissuePanel">${tissuePanelHTML(window.__selTissue)}</div>
+<div class="card"><h2>Training focus by tissue/system</h2><p class="muted small">Computed from your recent Garmin activities plus food and supplement logs (organ support signals).</p>${sorted.map(([k,v])=>metricLine(k,v,colorFor(v))).join('')}</div>
+<div class="card"><h2>Recent activity mapping</h2>${(state.body.log||[]).slice(0,12).map(l=>`<div class="logItem"><b>${esc(l.name)}</b><div class="muted tiny">${esc(l.date)}</div><div>${l.hit.map(h=>`<span class="tag">${esc(h)}</span>`).join(' ')}</div></div>`).join('')||'<p class="muted">No activities loaded yet.</p>'}</div>
+</div></div>`}
+function viewHealth(a){
+  const m=state.metrics;
+  // WHOOP's 9 healthspan metrics with 30-day context
+  const nineMetrics=[
+    {name:'Sleep Duration',   val:m.avgSleep?Math.round(m.avgSleep*10)/10+'h avg':'—', target:'7–9h', good:m.avgSleep>=7, ok:m.avgSleep>=6},
+    {name:'Sleep Consistency',val:m.sleepConsistency?Math.round(m.sleepConsistency)+'%':'—', target:'≥70%',good:m.sleepConsistency>=70,ok:m.sleepConsistency>=50},
+    {name:'Daily Steps',      val:m.avgSteps?Math.round(m.avgSteps).toLocaleString()+' avg':'—',    target:'≥8k', good:m.avgSteps>=8000,      ok:m.avgSteps>=5000},
+    {name:'Aerobic (WHO-eq)', val:m.mvpaEq!=null?Math.round(m.mvpaEq)+'min (30d)':'—',target:'≥645min',good:m.mvpaEq>=645,      ok:m.mvpaEq>=320},
+    {name:'Zone 4–5 Min',     val:m.z45!=null?Math.round(m.z45)+'min (30d)':'—',target:'≥300min',   good:m.z45>=300,            ok:m.z45>=120},
+    {name:'Strength Time',    val:m.strengthMinutes!=null?Math.round(m.strengthMinutes)+'min (30d)':'—',target:'≥60min',good:m.strengthMinutes>=60,ok:m.strengthMinutes>=30},
+    {name:'VO₂ Max',          val:m.vo2?m.vo2+' ml/kg/min':'No data',           target:'≥40',       good:m.vo2>=40,             ok:m.vo2>=35},
+    {name:'Resting HR',       val:m.rhr?Math.round(m.rhr)+' bpm':'—',           target:'≤60',       good:m.rhr<=60,             ok:m.rhr<=70},
+    {name:'Lean Body Mass',   val:m.leanKg?m.leanKg+'kg ('+m.leanMass+'%)':'No scale data',target:'≥75%', good:m.leanMass>=75,ok:m.leanMass>=65},
+  ];
+  const nineHtml=nineMetrics.map(x=>{
+    const color=x.val==='—'||x.val.includes('No')?'var(--txt3)':x.good?'var(--green)':x.ok?'var(--amber)':'var(--red)';
+    return `<div class="card" style="background:var(--s2);padding:14px"><div style="font-size:10px;color:var(--txt3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">${x.name}</div><div style="font-size:15px;font-weight:600;color:${color}">${x.val}</div><div style="font-size:10px;color:var(--txt3);margin-top:3px">target ${x.target}</div></div>`;
+  }).join('');
+
+  return `
+<div class="grid cols2">
+  <div class="card">
+    <h2>Healthspan age model</h2>
+    <div class="age ${a.age>a.chrono+4?'bad':a.age>a.chrono+1?'warn':'good'}">${a.age}</div>
+    <p class="muted">Chronological age ${a.chrono} · DOB ${state.profile?.userData?.birthDate||'not connected'}</p>
+    <p class="muted small" style="margin-top:6px">Based on 30-day rolling averages across WHOOP's 9 healthspan metrics</p>
+  </div>
+  <div class="card">
+    <h2>Age deltas (30-day avg)</h2>
+    ${a.del.map(d=>`<div class="deltaRow"><span>${d[0]}</span><div class="bar"><span style="width:${Math.min(100,Math.abs(d[1])*22)}%;background:${d[1]>0?COLORS.bad:COLORS.good}"></span></div><b class="${d[1]>0?'badC':'goodC'}">${d[1]>0?'+':''}${d[1].toFixed(1)}y</b></div>`).join('')}
+  </div>
+</div>
+<div class="card" style="margin-top:12px">
+  <h2>WHOOP's 9 Healthspan metrics <span class="pill small" style="font-size:11px;vertical-align:middle">${state.sleep.length}d sleep · ${state.steps.length}d steps</span></h2>
+  <div class="grid cols3" style="gap:8px;margin-top:12px">${nineHtml}</div>
+</div>
+<div class="card" style="margin-top:12px">
+  <h2>All Garmin readings (30-day avg)</h2>
+  <div class="grid cols4">${[
+    ['HRV',m.hrv?Math.round(m.hrv):'—'],['Body Battery',m.bodyBattery?Math.round(m.bodyBattery):'—'],
+    ['Deep %',m.deep?Math.round(m.deep*10)/10:'—'],['REM %',m.rem?Math.round(m.rem*10)/10:'—'],
+    ['Sleep score',m.sleepScore?Math.round(m.sleepScore):'—'],['Zone 1–3 min',m.z13?Math.round(m.z13):'—'],
+    ['Zone 4–5 min',m.z45?Math.round(m.z45):'—'],['VO₂ Max',m.vo2?m.vo2:'—'],
+    ['Stress drain/d',m.stressDrain!=null?Math.round(m.stressDrain):'—'],['Lean mass',m.leanKg?m.leanKg+'kg':'—'],
+    ['Weight',state.bodyComp?.weight_kg?state.bodyComp.weight_kg+'kg':'—'],['Body fat',state.bodyComp?.body_fat?state.bodyComp.body_fat+'%':'—']
+  ].map(x=>`<div class="card" style="background:var(--s2)"><h3>${x[0]}</h3><b style="font-size:22px">${x[1]}</b></div>`).join('')}
+  </div>
+</div>
+<div class="card" style="margin-top:12px">
+  <h2>Trends — 30 days</h2>
+  <div class="chart-grid">
+    <div class="chart-inner"><h3>Sleep Duration (h)</h3><canvas id="chartSleep"></canvas></div>
+    <div class="chart-inner"><h3>Sleep Score</h3><canvas id="chartSleepScore"></canvas></div>
+    <div class="chart-inner"><h3>HRV — overnight avg</h3><canvas id="chartHrv"></canvas></div>
+    <div class="chart-inner"><h3>Daily Steps</h3><canvas id="chartSteps"></canvas></div>
+    <div class="chart-inner"><h3>Body Battery — charged</h3><canvas id="chartBb"></canvas></div>
+    <div class="chart-inner"><h3>Daily Stress Drain (BB pts)</h3><canvas id="chartStress"></canvas></div>
+  </div>
+</div>`}
+function viewMatrix(){return `<div class="matrix">${domainScores().map(d=>`<div class="domain"><div class="domainTop"><div><h2 style="color:${d.color};font-size:16px;margin:0">${d.name}</h2><span class="muted tiny">${d.metrics.length} tracked inputs</span></div><div class="domainScore" style="color:${d.color}">${d.score??'—'}</div></div><div class="score" style="margin:10px 0"><span style="width:${d.score??0}%;background:${d.color}"></span></div>${d.metrics.map(m=>{const s=scoreFor(m.key);return `<div class="component"><div class="componentRow"><span>${m.name}</span><span class="tag ${m.source}">${m.source}</span></div><div class="score"><span style="width:${s??0}%;background:${d.color}"></span></div><div class="muted tiny" style="margin-top:3px">${m.note}</div></div>`}).join('')}</div>`).join('')}</div>`}
+function viewHabits(){const h=state.habits[TODAY]||{};return `<div class="grid cols2"><div class="card"><h2>Today habits</h2>${DEFAULT_HABITS.map(x=>`<label class="habit"><input type="checkbox" data-habit="${x.id}" ${h[x.id]?'checked':''}><span><b>${x.name}</b><br><span class="muted tiny">${x.tags.map(t=>TAGS.find(g=>g.id===t)?.name).join(' · ')}</span></span><span class="streak">${streak(x.id)}d</span></label>`).join('')}</div><div class="card"><h2>Habit impact</h2><p class="muted small">Habit completion feeds domain scores indirectly and is included in daily AI recommendations.</p>${TAGS.map(t=>{const related=DEFAULT_HABITS.filter(h=>h.tags.includes(t.id));const done=related.filter(r=>h[r.id]).length;const score=related.length?Math.round(done/related.length*100):null;return related.length?metricLine(t.name,score,t.color):''}).join('')}</div></div>`}
+function streak(id){let n=0;for(let i=0;i<30;i++){const d=ds(i);if(state.habits[d]?.[id])n++;else if(i>0)break}return n}
+function viewFood(){
+  const foodLogs=state.food.filter(f=>f.date===TODAY).map(f=>`<div class="logItem"><span class="tag">Food</span> ${esc(f.text)}<div style="margin-top:6px">${nutritionBadges(f)}</div>${f.aiText?`<details style="margin-top:6px"><summary class="muted tiny">AI estimate</summary><pre class="tiny" style="white-space:pre-wrap;max-height:120px;overflow:auto">${esc(typeof f.aiText==='object'?JSON.stringify(f.aiText,null,2):f.aiText)}</pre></details>`:''}</div>`);
+  const suppLogs=state.supplements.filter(s=>s.date===TODAY).map(s=>`<div class="logItem"><span class="tag">Supplement</span> ${esc(s.text)}</div>`);
+
+  // 7-day nutrient coverage panel
+  const n7=get7dNutrition();
+  const NUTRIENT_LABELS={calories:'Calories',protein_g:'Protein',carbs_g:'Carbs',fat_g:'Fat',fiber_g:'Fiber',omega3_g:'Omega-3',vitamin_d_iu:'Vitamin D',calcium_mg:'Calcium',iron_mg:'Iron',magnesium_mg:'Magnesium',zinc_mg:'Zinc',vitamin_b12_ug:'B12',vitamin_c_mg:'Vitamin C',folate_ug:'Folate',potassium_mg:'Potassium'};
+  const nutrientRows=n7?Object.entries(NUTRIENT_RDAS).map(([k,meta])=>{
+    const val=n7[k];const score=nutrientCoverageScore(k,val);
+    const color=score==null?'var(--txt3)':score>=90?'var(--green)':score>=60?'var(--amber)':'var(--red)';
+    const pct=score!=null?score+'%':'—';
+    const display=val!=null?`${Math.round(val)}${meta.unit}`:'-';
+    return `<div class="deltaRow"><span class="small">${NUTRIENT_LABELS[k]||k}</span><div class="bar"><span style="width:${Math.min(100,score||0)}%;background:${color}"></span></div><span class="tiny" style="color:${color};min-width:60px;text-align:right">${display} · ${pct} RDA</span></div>`;
+  }).join(''):'<p class="muted small">Log food with AI to see 7-day nutrient coverage.</p>';
+
+  // Systems stressed by nutrition gaps
+  const nutBonus=nutritionDomainBonus();
+  const stressed=Object.entries(nutBonus).filter(([,s])=>s<50).sort((a,b)=>a[1]-b[1]).slice(0,4);
+  const stressedHtml=stressed.length?stressed.map(([domain,score])=>{
+    const tag=TAGS.find(t=>t.id===domain);
+    const deficientNutrients=Object.entries(NUTRIENT_DOMAINS).filter(([,dw])=>dw[domain]).map(([nutrient,dw])=>{
+      const cov=nutrientCoverageScore(nutrient,n7?.[nutrient]);
+      return cov!=null&&cov<70?NUTRIENT_LABELS[nutrient]:null;
+    }).filter(Boolean).slice(0,3);
+    return `<div class="metric" style="margin:8px 0"><span class="dot" style="background:${tag?.color||'var(--red)'}"></span><div class="name small">${tag?.name||domain} <span class="muted tiny">(nutrition score: ${score})</span></div><div class="tiny" style="color:var(--amber);margin-top:2px">Low: ${deficientNutrients.join(', ')||'see nutrient panel'}</div></div>`;
+  }).join(''):'<p class="muted small">No major nutrition-driven deficiencies detected.</p>';
+
+  return `<div class="grid cols2">
+    <div class="card">
+      <h2>Food log — natural language</h2>
+      <textarea id="foodText" placeholder="e.g. 3 eggs, dosa, sambar, coffee · or chicken rice bowl with salad + dal"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn" id="foodAi">Estimate macros + save</button>
+        <button class="btn secondary" id="foodAdd">Save without AI</button>
+      </div>
+      <div id="foodResult" class="coachOut" style="margin-top:10px;min-height:60px"></div>
+      <h3 style="margin-top:16px">Today's logs</h3>
+      ${[...foodLogs,...suppLogs].join('')||'<p class="muted small">No logs today.</p>'}
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <h2>Supplement log</h2>
+        <input id="suppText" placeholder="Creatine 5g, Vitamin D 2000 IU, omega-3...">
+        <button class="btn" id="suppAdd" style="margin-top:8px">Add supplement</button>
+      </div>
+      <div class="card">
+        <h2>Systems stressed by nutrition gaps <span class="muted small" style="font-size:11px;font-weight:400">7-day avg</span></h2>
+        ${stressedHtml}
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h2>7-day nutrient coverage vs RDA <span class="muted small" style="font-size:11px;font-weight:400">log food daily with AI to build history</span></h2>
+    ${nutrientRows}
+  </div>`;
+}
+function viewCoach(){return `<div class="grid cols2"><div class="card"><h2>Ask: how am I doing today?</h2><p class="muted small">Uses Garmin metrics, habit state, food/supplement logs, and the metric matrix to generate day-specific actions.</p><textarea id="coachQuestion" placeholder="How am I doing today? What should I train, eat, and supplement?">How am I doing today?</textarea><button class="btn" id="coachBtn" style="margin-top:8px">Ask coach</button><div id="coachOut" class="coachOut" style="margin-top:12px">${state.aiNotes||'No recommendation generated yet.'}</div></div><div class="card"><h2>Recommendation contract</h2><table class="table"><tr><th>Area</th><th>Output</th></tr><tr><td>Activities</td><td>Recovery vs push day, cardio dose, step target</td></tr><tr><td>Workout</td><td>Exact exercises; fixes body-map gaps</td></tr><tr><td>Food</td><td>Lunch/dinner options from current gaps</td></tr><tr><td>Supplements</td><td>Only evidence-aligned suggestions; logs adherence</td></tr></table></div></div>`}
+function viewSettings(){return `<div class="grid cols2"><div class="card"><h2>Garmin connection setup</h2><p class="muted small">The app is independent of Cowork. Use Cowork MCP when available, or point it at your own local Garmin Direct API proxy.</p><label class="small">Connection mode<select id="connectorMode" style="width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:12px;color:var(--txt);padding:10px;margin-top:5px"><option value="auto" ${state.connectorMode==='auto'?'selected':''}>Auto: Cowork if present, otherwise Direct API</option><option value="cowork" ${state.connectorMode==='cowork'?'selected':''}>Cowork Garmin MCP</option><option value="direct" ${state.connectorMode==='direct'?'selected':''}>Direct Garmin API proxy</option></select></label><label class="small" style="display:block;margin-top:12px">Direct API base URL<input id="directApiBase" value="${state.directApiBase||''}" placeholder="http://127.0.0.1:8787"></label><label class="small" style="display:block;margin-top:12px">App API token (optional)<input id="appApiToken" type="password" value="${state.appApiToken||''}" placeholder="Required only if APP_API_TOKEN is set on server"></label><div class="grid cols4" style="margin-top:10px"><button class="btn secondary small" id="testDirectApi">Test Proxy</button><button class="btn secondary small" id="testGarminAuth">Test Garmin</button><button class="btn secondary small" id="testGarminSync">Test Full Sync</button><button class="btn secondary small" id="testAiProvider">Test AI</button></div><div class="coachOut" id="directApiStatus" style="min-height:70px;margin-top:10px">Not tested</div><p style="margin-top:12px">${GARMIN_TOOLS.map(t=>`<span class="tag direct">${t.replace('mcp__Garmin_Connect__','')}</span>`).join(' ')}</p><p class="muted tiny" style="margin-top:10px">Direct browser-to-Garmin login is intentionally not implemented: it would expose credentials and is blocked by CORS. Use the included local proxy server so credentials stay on your machine/server.</p><p class="muted tiny" style="margin-top:8px"><a href="./METRIC_FORMULAS.md" target="_blank" rel="noopener">Metric formulas + provenance</a></p></div><div class="card"><h2>Tracked tag domains</h2><p class="muted small">Every correlation tag from the provided HTML is tracked as a first-class metric domain.</p>${TAGS.map(t=>`<div class="metric" style="margin:8px 0"><span class="dot" style="background:${t.color}"></span><div class="name">${t.name}</div><b>${domainScores().find(d=>d.id===t.id)?.score??'—'}</b></div>`).join('')}</div><div class="card" style="grid-column:1/-1"><h2>Manual metric overrides</h2><div class="grid cols3">${METRIC_REGISTRY.filter(m=>m.source==='manual').map(m=>`<label class="small">${m.name}<input data-manual="${m.key}" value="${state.manual[m.key]??''}" placeholder="${m.note}"></label>`).join('')}</div></div></div>`}
+async function askAI(prompt, context=null){
+  try{
+    if(activeConnector()==='direct'){
+      const {base}=apiConfig();
+      const headers=apiHeaders();const r=await fetch(`${base}/api/ai/coach`,{method:'POST',headers,body:JSON.stringify({context:context||{prompt}})});
+      const data=await r.json(); if(r.ok) return data.result?.text || data.text || JSON.stringify(data.result);
+    }
+    if(window.cowork?.callAI)return await window.cowork.callAI({prompt,context}); if(window.claude?.complete)return await window.claude.complete(prompt)
+  }catch(e){console.warn(e)}
+  return null
+}
+// ─── Food log server sync (shared with the Health OS Cowork artifact) ────────
+async function postFoodToServer(entry){
+  try{const {base}=apiConfig();await fetch(`${base}/api/food`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)});}catch(e){console.warn('food post:',e)}
+}
+async function loadFoodFromServer(){
+  try{
+    const {base}=apiConfig();
+    const r=await fetch(`${base}/api/food`); if(!r.ok)return false;
+    const j=await r.json(); const server=j.result||[];
+    if(!Array.isArray(server))return false;
+    const byId={}; state.food.forEach(f=>{if(f.id)byId[f.id]=f});
+    let changed=false;
+    for(const s of server){
+      if(s.id&&byId[s.id]){
+        // Server copy wins if it has nutrition and local doesn't (artifact filled it in)
+        if(s.nutrition&&!byId[s.id].nutrition){Object.assign(byId[s.id],s);changed=true;}
+      }else if(!state.food.some(f=>!f.id&&f.date===s.date&&f.text===s.text)){
+        state.food.push(s);changed=true;
+      }
+    }
+    // Push up any local-only entries so the artifact can see/analyse them
+    const serverIds=new Set(server.map(s=>s.id));
+    const localOnly=state.food.filter(f=>!f.id||!serverIds.has(f.id));
+    if(localOnly.length){localOnly.forEach(f=>{f.id=f.id||'f'+Date.now()+Math.random().toString(36).slice(2,6)});postFoodToServer({entries:localOnly});}
+    if(changed){save('food',state.food);computeDerived();render();}
+    return changed;
+  }catch(e){console.warn('food load:',e);return false}
+}
+async function askNutritionAI(foodText){
+  const prompt=`Analyse this food and return ONLY a JSON object — no markdown, no prose:\n{"calories":N,"protein_g":N,"carbs_g":N,"fat_g":N,"fiber_g":N,"omega3_g":N,"vitamin_d_iu":N,"calcium_mg":N,"iron_mg":N,"magnesium_mg":N,"zinc_mg":N,"vitamin_b12_ug":N,"vitamin_c_mg":N,"folate_ug":N,"potassium_mg":N,"confidence":"high|medium|low","improvements":["...","..."]}\nUse null for unknowns. Food: ${foodText}`;
+  try{
+    // Prefer window.cowork.askClaude (free, no API key needed — works via Claude in Chrome)
+    if(window.cowork?.askClaude){
+      const raw=await window.cowork.askClaude(prompt,[{type:'text',text:'Return JSON only.'}]);
+      return raw||null;
+    }
+    // Fallback: server AI endpoint (requires ANTHROPIC_API_KEY in .env.local)
+    if(activeConnector()==='direct'){
+      const {base}=apiConfig();
+      const headers=apiHeaders();const r=await fetch(`${base}/api/ai/nutrition`,{method:'POST',headers,body:JSON.stringify({foodText})});
+      const data=await r.json(); if(r.ok) return data.result?.text || data.text || JSON.stringify(data.result);
+    }
+    return await askAI(prompt);
+  }catch(e){console.warn(e)}
+  return null
+}
+function coachContext(question='How am I doing today?'){return {date:TODAY,userQuestion:question,age:ageFromDob(state.profile?.userData?.birthDate),garminMetrics:state.metrics,domainScores:domainScores().map(d=>({id:d.id,name:d.name,score:d.score,inputs:d.metrics.map(m=>({name:m.name,source:m.source,score:scoreFor(m.key)}))})),bodyFocus:state.body.M||{},neglectedTissues:Object.entries(state.body.M||{}).filter(([,v])=>v===0).map(([k])=>k),habits:state.habits[TODAY]||{},foodToday:state.food.filter(f=>f.date===TODAY),supplementsToday:state.supplements.filter(s=>s.date===TODAY)}}
+function coachPrompt(question='How am I doing today?'){return `User question: ${question}. Use the supplied Garmin metrics, every tag/domain score, body focus gaps, habits, food macro/micronutrient estimates, and supplements. Return: Status, Activities, Exact workout, Lunch/dinner, Supplements, Cautions. Avoid medical claims; flag lab-only unknowns.`}
+function fallbackCoach(){const m=state.metrics, low=domainScores().filter(d=>d.score!=null).sort((a,b)=>a.score-b.score).slice(0,3).map(d=>d.name).join(', ');const neglected=Object.entries(state.body.M||{}).filter(([,v])=>v===0).map(([k])=>k).slice(0,5).join(', ');return `Status: lowest systems are ${low||'not enough data'}.\n\nActivity: ${m.avgSleep&&m.avgSleep<6.5?'keep intensity moderate; prioritize steps and easy Zone 2':'add 30–40 min Zone 2 or a brisk walk'}.\n\nWorkout: prioritize pull balance: lat pulldown 3×10, seated row 3×10, face pulls 3×15, biceps curls 2×12, core carry 3 rounds. Neglected: ${neglected||'none obvious'}.\n\nFood: choose high-protein, high-fiber lunch/dinner: lean protein + dal/beans + vegetables + rice/roti adjusted to hunger. Avoid large late meal if sleep consistency is poor.\n\nSupplements: log current stack first. Evidence-aligned basics to discuss with clinician if appropriate: creatine, vitamin D if low, omega-3 if low fish intake, electrolytes around sweaty training.`}
+let _charts={};
+function mkChart(id,type,labels,data,color){
+  if(typeof Chart==='undefined'){const el=document.getElementById(id);if(el&&el.parentElement&&!el.parentElement.querySelector('.chart-err')){const m=document.createElement('div');m.className='chart-err tiny muted';m.textContent='Chart.js failed to load — check chart.umd.js is next to this file';el.parentElement.appendChild(m);}return;}
+  if(_charts[id]){try{_charts[id].destroy()}catch{}delete _charts[id];}
+  const el=document.getElementById(id); if(!el)return;
+  // Never draw into a hidden canvas — Chart.js mis-sizes it (skewed/stretched charts).
+  // Tab activation re-runs initTrendCharts, so the newly visible set gets drawn then.
+  if(el.offsetParent===null)return;
+  const valid=data.filter(x=>x!=null);
+  if(!valid.length){el.style.display='none';return;}
+  el.style.display='block';
+  // maintainAspectRatio:false + explicit height on canvas prevents Chart.js collapsing to 0px
+  el.style.height='90px';
+  _charts[id]=new Chart(el.getContext('2d'),{
+    type,
+    data:{labels,datasets:[{data,backgroundColor:type==='bar'?color+'BB':color+'22',borderColor:color,borderWidth:2,fill:type==='line',tension:.35,pointRadius:2,pointHoverRadius:4,spanGaps:true}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      animation:{duration:400},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw!=null?String(Math.round(ctx.raw*10)/10):''}}},
+      scales:{
+        x:{ticks:{font:{size:9},maxRotation:45,maxTicksLimit:12},grid:{display:false},border:{display:false}},
+        y:{ticks:{font:{size:9},maxTicksLimit:5},grid:{color:'rgba(0,0,0,.06)'},border:{display:false}}
+      }
+    }
+  });
+}
+function initTrendCharts(){
+  const fd=d=>{if(!d)return'';return String(d).slice(5,10)}; // "YYYY-MM-DD" → "MM-DD"
+
+  // Sort data once
+  const sl=[...state.sleep].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
+  const st=[...state.steps].sort((a,b)=>String(a.calendarDate||a.date||'').localeCompare(String(b.calendarDate||b.date||'')));
+  const bb=[...state.bodyBatteryHistory||[]].filter(x=>x.date&&x.value!=null).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const stress=[...state.bodyBatteryHistory||[]].filter(x=>x.date&&x.stress_drain!=null).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+
+  // Helper: render to both Today-tab (tXxx) and Healthspan-tab (chartXxx) canvases
+  // Today tab is always active → always renders at correct size
+  // Healthspan tab canvases only render correctly when that tab is active
+  function draw(todayId, healthId, type, labels, data, color){
+    mkChart(todayId, type, labels, data, color);
+    mkChart(healthId, type, labels, data, color);
+  }
+
+  if(sl.length){
+    const lb=sl.map(x=>fd(x.date));
+    draw('tSleep',     'chartSleep',     'bar',  lb, sl.map(x=>x.sleep_hours?Math.round(x.sleep_hours*10)/10:null), '#6172F3');
+    draw('tHrv',       'chartHrv',       'line', lb, sl.map(x=>x.avg_overnight_hrv?Math.round(x.avg_overnight_hrv*10)/10:null), '#079455');
+    draw('tSleepScore','chartSleepScore','line', lb, sl.map(x=>x.sleep_score??null), '#7A5AF8');
+  }
+  if(st.length){
+    const lb=st.map(x=>fd(x.calendarDate||x.date));
+    draw('tSteps','chartSteps','bar', lb, st.map(x=>x.totalSteps??null), '#0086C9');
+  }
+  if(bb.length){
+    draw('tBb','chartBb','line', bb.map(x=>fd(x.date)), bb.map(x=>x.value), '#CA8504');
+  }
+  if(stress.length){
+    draw('tStress','chartStress','bar', stress.map(x=>fd(x.date)), stress.map(x=>x.stress_drain), '#DD2590');
+  }
+}
+
+function bind(){
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{setTimeout(()=>activateTab(activeIndex()),0)});
+  document.getElementById('syncBtn').onclick=syncGarmin;
+  document.querySelectorAll('[data-habit]').forEach(i=>i.onchange=()=>{state.habits[TODAY]=state.habits[TODAY]||{};state.habits[TODAY][i.dataset.habit]=i.checked;save('habits',state.habits);render()});
+  document.querySelectorAll('[data-manual]').forEach(i=>i.onchange=()=>{state.manual[i.dataset.manual]=i.value===''?null:Number(i.value)||i.value;save('manual',state.manual);computeDerived();render()});
+  const foodAdd=document.getElementById('foodAdd'); if(foodAdd)foodAdd.onclick=()=>{const t=document.getElementById('foodText').value.trim();if(t){const entry={id:'f'+Date.now(),date:TODAY,text:t};state.food.push(entry);save('food',state.food);postFoodToServer(entry);computeDerived();render()}};
+  const foodAi=document.getElementById('foodAi'); if(foodAi)foodAi.onclick=async()=>{
+    const t=document.getElementById('foodText').value.trim();if(!t)return;
+    const out=document.getElementById('foodResult');
+    out.textContent='Estimating nutrients…';
+    const raw=await askNutritionAI(t);
+    if(raw){
+      // Try to parse as JSON first (new structured format); fall back to text parse
+      let nutrition=null;
+      try{
+        const cleaned=typeof raw==='string'?raw.trim().replace(/^```json?\s*/,'').replace(/```\s*$/,''):null;
+        nutrition=cleaned?JSON.parse(cleaned):(typeof raw==='object'?raw:null);
+      }catch{nutrition=parseNutritionText(raw);}
+      const entry={id:'f'+Date.now(),date:TODAY,text:t,nutrition,aiText:raw};
+      state.food.push(entry);save('food',state.food);postFoodToServer(entry);computeDerived();render();
+      const cal=nutrition?.calories?`${Math.round(nutrition.calories)} kcal · `:'';
+      const pro=nutrition?.protein_g?`${Math.round(nutrition.protein_g)}g protein · `:'';
+      const fib=nutrition?.fiber_g?`${Math.round(nutrition.fiber_g)}g fiber`:'';
+      out.textContent=`Saved. ${cal}${pro}${fib}\n\nFull estimate stored in log.`;
+    }else{
+      // No AI here — save as pending; the Health OS Cowork artifact analyses pending entries with Claude (free)
+      const entry={id:'f'+Date.now(),date:TODAY,text:t};
+      state.food.push(entry);save('food',state.food);postFoodToServer(entry);computeDerived();render();
+      out.textContent='Logged. Nutrients will be filled in automatically next time you open the Health OS artifact in Claude (it analyses pending entries with Claude — no API key needed). Refresh here afterwards.';
+    }
+  };
+  const supp=document.getElementById('suppAdd'); if(supp)supp.onclick=()=>{const t=document.getElementById('suppText').value.trim();if(t){state.supplements.push({date:TODAY,text:t});save('supplements',state.supplements);computeDerived();render()}};
+  const coach=document.getElementById('coachBtn'); if(coach)coach.onclick=async()=>{const out=document.getElementById('coachOut');const q=document.getElementById('coachQuestion')?.value?.trim()||'How am I doing today?';out.textContent='Generating...';const ai=await askAI(coachPrompt(q),coachContext(q));state.aiNotes=ai||fallbackCoach();save('aiNotes',state.aiNotes);out.textContent=state.aiNotes};
+  const connector=document.getElementById('connectorMode'); if(connector)connector.onchange=()=>{state.connectorMode=connector.value;save('connectorMode',state.connectorMode);render()};
+  const directBase=document.getElementById('directApiBase'); if(directBase)directBase.onchange=()=>{state.directApiBase=directBase.value.trim();save('directApiBase',state.directApiBase);render()};
+  const apiToken=document.getElementById('appApiToken'); if(apiToken)apiToken.onchange=()=>{state.appApiToken=apiToken.value.trim();save('appApiToken',state.appApiToken);render()};
+  const testDirect=document.getElementById('testDirectApi'); if(testDirect)testDirect.onclick=async()=>{const el=document.getElementById('directApiStatus');el.textContent='Testing proxy...';try{const {base}=apiConfig();let r=await fetch(`${base}/health`);let txt=await r.text();if(!r.ok||!txt.trim().startsWith('{')){r=await fetch(`${base}/api/health`);txt=await r.text()}const j=JSON.parse(txt);el.textContent=r.ok?`Proxy reachable\nGarmin configured: ${j.garminConfigured}\nAI configured: ${j.aiConfigured}\nMock Garmin: ${j.mockGarmin}\nMock AI: ${j.mockAi}`:'Proxy returned '+r.status}catch(e){el.textContent='Proxy unreachable: '+e.message}};
+  const testGarmin=document.getElementById('testGarminAuth'); if(testGarmin)testGarmin.onclick=async()=>{const el=document.getElementById('directApiStatus');el.textContent='Testing Garmin profile...';try{const {base}=apiConfig();const headers=apiHeaders();const r=await fetch(`${base}/api/garmin/user-profile`,{method:'POST',headers,body:'{}'});const j=await r.json();el.textContent=r.ok?`Garmin OK\nDOB: ${j.result?.userData?.birthDate||'unknown'}\nProfile ID: ${j.result?.id||j.result?.userProfileId||'unknown'}`:`Garmin failed ${r.status}\n${j.error||''}`}catch(e){el.textContent='Garmin test failed: '+e.message}};
+
+  const testSync=document.getElementById('testGarminSync'); if(testSync)testSync.onclick=async()=>{const el=document.getElementById('directApiStatus');el.textContent='Testing full Garmin sync...';try{const sync=await directSyncFetch();if(sync){el.textContent=`Full sync OK\nDOB: ${sync.profile?.userData?.birthDate||'unknown'}\nSleep nights: ${sync.sleep?.length??0}\nStep days: ${Array.isArray(sync.steps)?sync.steps.length:0}\nActivities: ${sync.activities?.activities?.length??0}\nPartial errors: ${sync.errors?.length??0}`}else{el.textContent='Full sync failed: no response'}}catch(e){el.textContent='Full sync failed: '+e.message}};
+  const testAi=document.getElementById('testAiProvider'); if(testAi)testAi.onclick=async()=>{const el=document.getElementById('directApiStatus');el.textContent='Testing AI nutrition endpoint...';try{const {base}=apiConfig();const headers=apiHeaders();const r=await fetch(`${base}/api/ai/nutrition`,{method:'POST',headers,body:JSON.stringify({foodText:'2 eggs and toast'})});const j=await r.json();el.textContent=r.ok?`AI OK\n${(j.result?.text||'').slice(0,500)}`:`AI failed ${r.status}\n${j.error||''}`}catch(e){el.textContent='AI test failed: '+e.message}};
+  document.querySelectorAll('[data-body-view]').forEach(b=>b.onclick=()=>{localStorage.setItem('hos:bodyView',b.dataset.bodyView);render()});
+  const tip=document.getElementById('tip');document.querySelectorAll('[data-m]').forEach(el=>{const k=el.dataset.m;el.onmousemove=e=>{const v=state.body.M?.[k]??0;tip.style.display='block';tip.style.left=e.clientX+12+'px';tip.style.top=e.clientY+12+'px';tip.textContent=`${k}: ${v} sessions`};el.onmouseenter=()=>updateTissuePanel(k);el.onclick=()=>updateTissuePanel(k);el.onmouseleave=()=>tip.style.display='none'});
+}
+function activateTab(i){setTimeout(()=>{const v=document.querySelector(`[data-view="${i}"]`);if(!v)return;v.querySelectorAll('.card,.domain,.habit').forEach((el,j)=>{el.style.animation='none';void el.offsetWidth;el.style.animation=`fadeUp .26s ease ${j*.045}s both`;});},10);
+  document.querySelectorAll('.tab,.view').forEach(x=>x.classList.remove('active'));
+  document.querySelector(`[data-tab="${i}"]`)?.classList.add('active');
+  document.querySelector(`[data-view="${i}"]`)?.classList.add('active');
+  const _pn=document.getElementById('pageName'); if(_pn)_pn.textContent=['Today','Healthspan','Metrics Matrix','Body Map','Habits','Food + Supplements','AI Coach','Settings'][i]||'Today';
+  if(i===0||i===1)setTimeout(initTrendCharts,60);
+}
+window.addEventListener('hashchange',()=>activateTab(activeIndex()));
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+render();
+// On startup: load cached data instantly, then sync fresh data in background
+(async()=>{
+  try{
+    const {base}=apiConfig();
+    const r=await fetch(`${base}/api/cache`);
+    if(r.ok){
+      const j=await r.json();
+      const cached=j.result;
+      if(cached?.sleep?.length||cached?.steps?.length){
+        if(cached.profile)state.profile=cached.profile;
+        if(cached.rhr)state.metrics.rhr=cached.rhr?.value??cached.rhr?.allMetrics?.metricsMap?.WELLNESS_RESTING_HEART_RATE?.[0]?.value??null;
+        if(cached.body_battery?.length){const validBb=cached.body_battery.filter(x=>x.charged!=null);state.metrics.bodyBattery=validBb.length?validBb[validBb.length-1].charged:null;state.bodyBatteryHistory=cached.body_battery.map(x=>({date:x.date,value:x.charged,stress_drain:x.stress_drain}));}
+        if(cached.steps?.length)state.steps=cached.steps;
+        if(cached.activities?.activities?.length)state.activities=cached.activities.activities;
+        if(cached.sleep?.length)state.sleep=cached.sleep;
+        if(cached.body_comp)state.bodyComp=cached.body_comp;
+        if(cached.zone_minutes_30d)state.zoneMins30d=cached.zone_minutes_30d;
+        if(cached.hrv_baseline)state.hrvBaseline=cached.hrv_baseline;
+        if(cached.daily_stats?.length)state.dailyStats=cached.daily_stats;
+        if(cached.vo2?.value!=null)state.metrics.vo2=cached.vo2.value;
+        computeDerived();render();
+        setTimeout(initTrendCharts,200);
+        const ageS=j.age_seconds;
+        const conn=document.getElementById('conn'),ls=document.getElementById('lastSync');
+        if(conn)conn.textContent='Garmin: cached';if(conn)conn.className='pill ok';
+        if(ls)ls.textContent=ageS?`Cached ${ageS<3600?Math.round(ageS/60)+'m':Math.round(ageS/3600)+'h'} ago — syncing…`:'Cached — syncing…';
+      }
+    }
+  }catch(e){console.warn('cache load:',e)}
+  // Pull shared food log (artifact may have analysed pending entries with Claude)
+  loadFoodFromServer();
+  // Always sync fresh data in background
+  syncGarmin();
+  // Re-check the food log periodically so artifact-analysed nutrients appear without a manual refresh
+  setInterval(loadFoodFromServer, 60000);
+})();
+</script>
+</body>
+</html>

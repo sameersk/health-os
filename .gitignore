@@ -1,0 +1,11 @@
+.env
+.env.local
+.env.*.local
+*.pkl
+garmin_cache.json
+nutrition_log.json
+__pycache__/
+node_modules/
+.vercel/
+.DS_Store
+*.log

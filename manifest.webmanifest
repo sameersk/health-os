@@ -1,0 +1,18 @@
+{
+  "name": "Health OS",
+  "short_name": "Health OS",
+  "description": "Garmin-connected healthspan, body focus, habits, food, supplements, and AI coaching.",
+  "start_url": "./health-operating-system.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#08090f",
+  "theme_color": "#65c7ff",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
