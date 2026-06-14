@@ -698,14 +698,35 @@ def call_ai(kind: str, body: dict) -> str:
 # ─── Entry point ──────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     if not EMAIL or not PASSWORD:
-        print('┌─────────────────────────────────────────────────────┐')
-        print('│  Error: Garmin credentials not found.               │')
-        print('│                                                     │')
-        print('│  Create .env.local in this folder with:            │')
-        print('│    GARMIN_EMAIL=your@email.com                      │')
-        print('│    GARMIN_PASSWORD=yourpassword                     │')
-        print('└─────────────────────────────────────────────────────┘')
-        sys.exit(1)
+        print()
+        print('  ┌─────────────────────────────────────────────────────┐')
+        print('  │  Health OS — first-time setup                       │')
+        print('  └─────────────────────────────────────────────────────┘')
+        print()
+        print('  No Garmin credentials found in .env.local')
+        print('  (Or copy .env.example → .env.local and fill in your details)')
+        print()
+        import getpass as _gp
+        _email = input('  Garmin email: ').strip()
+        _pass  = _gp.getpass('  Garmin password: ').strip()
+        if not _email or not _pass:
+            print()
+            print('  [error] Credentials required. Exiting.')
+            sys.exit(1)
+        # Persist for next run
+        _save = input('\n  Save to .env.local for next time? [Y/n]: ').strip().lower()
+        if _save != 'n':
+            Path('.env.local').write_text(
+                f'GARMIN_EMAIL={_email}\n'
+                f'GARMIN_PASSWORD={_pass}\n'
+                'PORT=8787\n'
+                '\n# AI coaching (optional)\n'
+                '# Get your key from: https://console.anthropic.com\n'
+                'ANTHROPIC_API_KEY=\n'
+            )
+            print('  Saved to .env.local\n')
+        global EMAIL, PASSWORD
+        EMAIL, PASSWORD = _email, _pass
 
     print(f'\n  Health OS — Python server')
     print(f'  Garmin account : {EMAIL}')
