@@ -171,14 +171,14 @@ textarea::placeholder,input::placeholder{color:var(--txt3)}
         <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <span>Local-first. Your health data is processed on this device and never leaves it.</span>
       </div>
-      <div class="ver">Health OS v2.0 · Garmin-linked</div>
+      <div class="ver">Health OS v2.0</div>
     </div>
   </aside>
   <div class="main">
     <div class="top">
       <div class="page-title"><span class="crumb">Dashboard</span><span id="pageName">Today</span></div>
       <div class="sync">
-        <span class="pill" id="conn">Garmin: checking</span>
+        <span class="pill" id="conn">Syncing...</span>
         <span class="pill" id="agePill">Age: —</span>
         <span class="pill" id="lastSync">Not synced</span>
         <button class="btn" id="syncBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>Sync</button>
@@ -212,15 +212,15 @@ const TAGS=[
 const METRIC_REGISTRY=[
   ['hrv','HRV','recovery,mood,stress,cardiac,energy,sleep','direct','avg_overnight_hrv','Higher is better; compare to personal baseline'],
   ['rhr','Resting Heart Rate','cardiac,longevity,recovery,stress,energy','direct','rhr','Lower trend is generally better'],
-  ['bodyBattery','Body Battery','energy,recovery,stress,mood','direct','bodyBattery','Garmin readiness proxy'],
-  ['allDayStress','All-day Stress','stress,recovery,mood,energy,cardiac','direct','avgStress','Garmin 0–100 (7-day avg); lower is better'],
+  ['bodyBattery','Body Battery','energy,recovery,stress,mood','direct','bodyBattery','Readiness proxy (0-100)'],
+  ['allDayStress','All-day Stress','stress,recovery,mood,energy,cardiac','direct','avgStress','0-100 stress index, 7-day avg; lower is better'],
   ['sleepDuration','Sleep Duration','longevity,cognitive,mood,metabolic,muscle,immune,hormonal','direct','avgSleep','Target 7–9h'],
   ['sleepConsistency','Sleep Consistency','longevity,cardiac,metabolic,mood,energy,hormonal','proxy','sleepConsistency','Target ≥70%'],
   ['sleepStages','Sleep Stages','muscle,cognitive,mood,hormonal,recovery,immune','direct','sleepStageScore','Deep 15–20%, REM 20–25%'],
   ['steps','Daily Steps','longevity,metabolic,cardiac,fatloss,mood','direct','avgSteps','Target ≥8k/day'],
   ['zones','HR Zone Time','cardiac,longevity,metabolic,fatloss,energy,cognitive','proxy','zoneScore','Weekly Zone 1–3 and 4–5'],
   ['trainingLoad','Training Load','recovery,muscle,energy,longevity,stress','proxy','strengthMinutes','Uses recent activity duration'],
-  ['vo2','VO₂ Max','longevity,cardiac,energy,metabolic,muscle,cognitive','direct','vo2','Requires Garmin VO₂ data'],
+  ['vo2','VO₂ Max','longevity,cardiac,energy,metabolic,muscle,cognitive','direct','vo2','Estimated from GPS activities with heart rate'],
   ['spo2','SpO₂','sleep,cardiac,cognitive,energy','manual','spo2','Add manually if available'],
   ['apob','ApoB','cardiac,longevity,inflammation','manual','apob','Lab marker'],
   ['lpa','Lp(a)','cardiac,longevity,inflammation','manual','lpa','Lab marker'],
@@ -234,7 +234,7 @@ const METRIC_REGISTRY=[
   ['vitd','Vitamin D','hormonal,muscle,immune,mood,bone,recovery','manual','vitd','Lab marker + supplement log'],
   ['leanMass','Lean Body Mass %','longevity,metabolic,muscle,fatloss,immune,hormonal,bone','manual','leanMass','DEXA/InBody/manual'],
   ['grip','Grip Strength','longevity,muscle,recovery,bone,energy','manual','grip','Dynamometer'],
-  ['vo2Lab','VO₂ Max Lab-grade','longevity,cardiac,energy,metabolic,cognitive','manual','vo2Lab','Sports lab value; use to calibrate Garmin estimate'],
+  ['vo2Lab','VO₂ Max Lab-grade','longevity,cardiac,energy,metabolic,cognitive','manual','vo2Lab','Sports lab / metabolic cart - overrides device estimate'],
   ['foodQuality','Food Quality','metabolic,energy,mood,inflammation,fatloss,immune','ai','foodScore','AI-estimated from food log'],
   ['supplements','Supplement Adherence','immune,hormonal,recovery,bone,inflammation','manual','suppScore','Supplement log']
 ].map(([id,name,tags,source,key,note])=>({id,name,tags:tags.split(','),source,key,note}));
@@ -368,7 +368,7 @@ async function directFetch(tool,args){
   const {base}=apiConfig(); if(!base) return null;
   const headers=apiHeaders();
   const r=await fetch(`${base}/api/garmin/${endpoint}`,{method:'POST',headers,body:JSON.stringify(args||{})});
-  if(!r.ok){const txt=await r.text().catch(() => '');state.metrics.lastGarminError=`${endpoint} ${r.status}${txt?': '+txt:''}`;console.warn('Direct Garmin API failed',endpoint,r.status,txt);return null}
+  if(!r.ok){const txt=await r.text().catch(() => '');state.metrics.lastGarminError=`${endpoint} ${r.status}${txt?': '+txt:''}`;console.warn('Direct data API failed',endpoint,r.status,txt);return null}
   return parse(await r.json())
 }
 async function directSyncFetch(){
@@ -376,13 +376,13 @@ async function directSyncFetch(){
   const headers=apiHeaders();
   const body={rhr_date:ds(1),body_battery_start:ds(8),body_battery_end:ds(1),steps_start:ds(15),steps_end:ds(1),activities_limit:60,vo2_start:ds(89),vo2_end:ds(1),sleep_dates:[1,2,3,4,5,6,7,8,9,10,11,12,13,14].map(ds)};
   const r=await fetch(`${base}/api/garmin/sync`,{method:'POST',headers,body:JSON.stringify(body)});
-  if(!r.ok){const txt=await r.text().catch(() => '');state.metrics.lastGarminError=`sync ${r.status}${txt?': '+txt:''}`;console.warn('Direct Garmin sync failed',r.status,txt);return null}
+  if(!r.ok){const txt=await r.text().catch(() => '');state.metrics.lastGarminError=`sync ${r.status}${txt?': '+txt:''}`;console.warn('Direct data sync failed',r.status,txt);return null}
   return parse(await r.json())
 }
-async function safeFetch(tool,args){try{const mode=activeConnector();if(mode==='cowork'&&window.cowork?.callMcpTool)return parse(await window.cowork.callMcpTool(tool,args));if(mode==='direct')return await directFetch(tool,args);return null}catch(e){console.warn('Garmin fetch failed',tool,e);return null}}
+async function safeFetch(tool,args){try{const mode=activeConnector();if(mode==='cowork'&&window.cowork?.callMcpTool)return parse(await window.cowork.callMcpTool(tool,args));if(mode==='direct')return await directFetch(tool,args);return null}catch(e){console.warn('Data fetch failed',tool,e);return null}}
 function ageFromDob(dob){if(!dob)return 24;const b=new Date(dob),n=new Date();let a=n.getFullYear()-b.getFullYear();if(n.getMonth()<b.getMonth()||(n.getMonth()===b.getMonth()&&n.getDate()<b.getDate()))a--;return a}
 async function syncGarmin(){
-  document.getElementById('conn').textContent='Garmin: syncing';document.getElementById('conn').className='pill warn';
+  document.getElementById('conn').textContent='Syncing...';document.getElementById('conn').className='pill warn';
   state.metrics.lastGarminError='';
   const mode=activeConnector();
   let profile,rhr,bb,steps,acts,vo2,sleep=[];
@@ -422,11 +422,11 @@ async function syncGarmin(){
   const _vo2=extractVo2(vo2); if(_vo2!=null)state.metrics.vo2=_vo2;
   computeDerived();
   const hasGarminData=Boolean(state.profile||state.activities.length||state.sleep.length||state.steps.length||state.metrics.rhr||state.metrics.bodyBattery||state.metrics.vo2);
-  document.getElementById('conn').textContent=hasGarminData?(mode==='cowork'?'Garmin: Cowork MCP':mode==='direct'?'Garmin: Direct API':'Garmin: offline'):'Garmin: auth/config error';
+  document.getElementById('conn').textContent=hasGarminData?'Connected':'Disconnected';
   document.getElementById('conn').className='pill '+(hasGarminData?'ok':'warn');
   const err=state.metrics.syncErrors?.length?` · ${state.metrics.syncErrors.length} partial errors`:'';
-  const authErr=state.metrics.lastGarminError?`Garmin error: ${state.metrics.lastGarminError}`:'';
-  document.getElementById('lastSync').textContent=hasGarminData?('Synced '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+err):(authErr||'Garmin unavailable: check backend env/auth token');
+  const authErr=state.metrics.lastGarminError?`Sync error: ${state.metrics.lastGarminError}`:'';
+  document.getElementById('lastSync').textContent=hasGarminData?('Synced '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+err):(authErr||'Not connected - check backend config');
   render();
   // Re-init charts: render() replaces canvas elements, so charts must be rebuilt after each sync
   setTimeout(initTrendCharts, 150);
@@ -497,7 +497,7 @@ function computeDerived(){
     m.avgStress=sv.length?Math.round(avg(sv,x=>x.avg_stress)):null;
   }
 
-  // Lean body mass from smart scale (WHOOP's 9th healthspan metric)
+  // Lean body mass from a connected or manually entered smart-scale reading
   if(state.bodyComp?.lean_kg){
     m.leanKg=state.bodyComp.lean_kg;
     // Score lean mass as % of body weight (target: men >75%, women >65%)
@@ -583,7 +583,7 @@ function domainScores(){
   });
 }
 function whoopAge(){
-  // WHOOP's 9 healthspan metrics — all using 30-day rolling averages
+  // 9 healthspan metrics using 30-day rolling averages
   const m=state.metrics, chrono=ageFromDob(state.profile?.userData?.birthDate);
   const del=[];
   // 1. Sleep Duration (target 7–9h)
@@ -614,20 +614,54 @@ function whoopAge(){
   const sum=Math.max(-8,Math.min(8,del.reduce((s,d)=>s+d[1],0)));
   return {chrono, age:Math.round((chrono+sum)*10)/10, pace:Math.max(.4,Math.round((1+sum/10)*10)/10), del};
 }
+const ORGAN_KEYS=new Set(['Heart','Brain','Lungs','Liver','Kidneys','Pancreas','Gut']);
+const MUSCLE_KEYS=['Chest','Front Delts','Triceps','Biceps','Lats','Rear Delts','Traps','Core','Hip Flexors','Lower Back','Quads','Hamstrings','Glutes','Calves','Forearms'];
 function mapBody(acts){
-  const M={Chest:0,'Front Delts':0,Triceps:0,Biceps:0,Lats:0,'Rear Delts':0,Traps:0,Core:0,'Hip Flexors':0,'Lower Back':0,Quads:0,Hamstrings:0,Glutes:0,Calves:0,Forearms:0,Heart:0,Brain:0,Lungs:0,Liver:0,Kidneys:0,Pancreas:0,Gut:0};
-  const log=[]; for(const a of acts){const n=(a.name||'').toLowerCase(),t=(a.type||'').toLowerCase(),hit=new Set(); const add=(...x)=>x.forEach(y=>hit.add(y));
-    if(/chest|bench|push/.test(n))add('Chest','Front Delts','Triceps'); if(/leg|squat|deadlift|lunge/.test(n))add('Quads','Hamstrings','Glutes','Calves','Hip Flexors','Lower Back','Core'); if(/abs|core/.test(n))add('Core');
-    if(/back|pull|row|lat/.test(n))add('Lats','Biceps','Rear Delts','Traps'); if(/shoulder|delt|press/.test(n))add('Front Delts','Triceps','Traps'); if(/bicep|curl/.test(n))add('Biceps','Forearms'); if(/tricep|dip/.test(n))add('Triceps');
-    if(/run|cycl|treadmill|badminton|swim/.test(t+n))add('Heart','Lungs','Brain','Quads','Hamstrings','Calves','Hip Flexors','Core'); if(/breath|meditat|yoga/.test(t+n))add('Brain','Lungs','Core');
-    if(t.includes('strength')&&!hit.size)add('Chest','Front Delts','Triceps','Lats','Biceps'); if(hit.size){hit.forEach(h=>M[h]++);log.push({name:a.name||a.type,date:(a.start_time||'').slice(0,10),hit:[...hit]})}
+  const lastDate={};
+  const log=[];
+  for(const a of acts){
+    const nm=(a.name||'').toLowerCase(),t=(a.type||'').toLowerCase(),hit=new Set();
+    const add=(...x)=>x.forEach(y=>hit.add(y));
+    if(/chest|bench|push/.test(nm))add('Chest','Front Delts','Triceps');
+    if(/leg|squat|deadlift|lunge/.test(nm))add('Quads','Hamstrings','Glutes','Calves','Hip Flexors','Lower Back','Core');
+    if(/abs|core/.test(nm))add('Core');
+    if(/back|pull|row|lat/.test(nm))add('Lats','Biceps','Rear Delts','Traps');
+    if(/shoulder|delt|press/.test(nm))add('Front Delts','Triceps','Traps');
+    if(/bicep|curl/.test(nm))add('Biceps','Forearms');
+    if(/tricep|dip/.test(nm))add('Triceps');
+    if(/run|cycl|treadmill|badminton|swim/.test(t+nm))add('Quads','Hamstrings','Calves','Hip Flexors','Core');
+    if(/breath|meditat|yoga/.test(t+nm))add('Core');
+    if(t.includes('strength')&&!hit.size)add('Chest','Front Delts','Triceps','Lats','Biceps');
+    const muscleHit=[...hit].filter(h=>!ORGAN_KEYS.has(h));
+    if(muscleHit.length){
+      const d=(a.start_time||'').slice(0,10);
+      muscleHit.forEach(h=>{if(!lastDate[h]||d>lastDate[h])lastDate[h]=d;});
+      log.push({name:a.name||a.type,date:d,hit:muscleHit});
+    }
   }
-  const todayFood=state.food.filter(f=>f.date===TODAY), todaySupps=state.supplements.filter(s=>s.date===TODAY);
-  if(todayFood.length){M.Gut+=todayFood.length;M.Liver+=todayFood.length;M.Pancreas+=todayFood.length;log.push({name:'Food logs / nutrient processing',date:TODAY,hit:['Gut','Liver','Pancreas']})}
-  if(todaySupps.length){M.Liver+=todaySupps.length;M.Kidneys+=todaySupps.length;log.push({name:'Supplement logs / clearance systems',date:TODAY,hit:['Liver','Kidneys']})}
-  return {M,log}
+  const now=new Date(); const M={};
+  for(const m of MUSCLE_KEYS){
+    if(!lastDate[m]){M[m]=0}
+    else{const days=Math.round((now-new Date(lastDate[m]))/(864e5));M[m]=days<4?2:days<=10?1:0;}
+  }
+  const recent=state.food.filter(f=>f.date&&Math.round((now-new Date(f.date))/(864e5))<30);
+  const nutAvg=(key)=>{const v=recent.map(f=>f.nutrients?.[key]??f.nutrition?.[key]??0).filter(v=>v>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:0};
+  const fiber=nutAvg('fiber_g'), omega3=nutAvg('omega3_g');
+  const cardio30=(state.metrics.z13||0)+(state.metrics.z45||0);
+  const suppLoad=state.supplements?.filter(s=>s.date&&Math.round((now-new Date(s.date))/(864e5))<7).length??0;
+  const sig=(v,lo,hi)=>v>=hi?2:v>=lo?1:0;
+  M.Heart = sig(cardio30+(omega3>=1?150:omega3>=0.3?60:0), 200, 500);
+  M.Lungs = sig(cardio30, 150, 400);
+  M.Brain  = sig((state.metrics.avgSleep>=7?200:state.metrics.avgSleep>=6?100:0)+(cardio30>200?150:cardio30>80?75:0)+(omega3>=1?100:omega3>=0.3?40:0), 150, 400);
+  M.Liver  = sig(fiber+(cardio30>200?4:cardio30>80?2:0)-(suppLoad>7?3:suppLoad>3?1:0), 5, 14);
+  M.Kidneys= sig(10-Math.min(10,suppLoad), 4, 8);
+  M.Pancreas=sig(fiber, 10, 20);
+  M.Gut    = sig(fiber+(recent.length>5?3:recent.length>2?1:0), 5, 12);
+  const days={};
+  MUSCLE_KEYS.forEach(m=>{days[m]=lastDate[m]?Math.round((now-new Date(lastDate[m]))/(864e5)):null;});
+  return {M,log,lastDate,days}
 }
-function colorFor(n){return n===0?COLORS.bad:n<=2?COLORS.warn:COLORS.good}
+function colorFor(n){return n===0?COLORS.bad:n===1?COLORS.warn:COLORS.good}
 function activeIndex(){
   const raw=(location.hash||'#tab-0').replace('#tab-','');
   const n=Number(raw);
@@ -657,6 +691,7 @@ function val(x,s=''){return x==null?'—':(typeof x==='number'?Math.round(x*10)/
 function viewToday(){const m=state.metrics,a=whoopAge();const ds=domainScores().filter(d=>d.score!=null).sort((a,b)=>a.score-b.score).slice(0,5);
 return `<div class="hero"><div class="card" style="background:linear-gradient(135deg,${hg});color:#fff;border:none"><h3 style="color:rgba(255,255,255,.72);margin-bottom:8px">Healthspan Age</h3><div style="font-size:76px;font-weight:300;letter-spacing:-.06em;line-height:.92;color:#fff">${a.age}<span style="font-size:24px;opacity:.6;margin-left:4px">yrs</span></div><div style="font-size:13px;opacity:.72;margin-top:10px">Chronological ${a.chrono} &middot; aging ${a.pace}× ${a.pace<=1?'✓':'↑'}</div><div class="kpi"><span>Sleep<br><b>${val(m.latestSleep??m.avgSleep,'h')}</b><br><span class="tiny muted" style="font-size:10px">${m.avgSleep?'avg '+Math.round(m.avgSleep*10)/10+'h':''}</span></span><span>HRV<br><b>${val(m.latestHrv??m.hrv)}</b><br><span class="tiny muted" style="font-size:10px">${m.hrv?'avg '+Math.round(m.hrv):''}</span></span><span>Steps<br><b>${(m.latestSteps??m.avgSteps)?Math.round(m.latestSteps??m.avgSteps).toLocaleString():'—'}</b><br><span class="tiny muted" style="font-size:10px">${m.avgSteps?'avg '+Math.round(m.avgSteps/1000*10)/10+'k':''}</span></span><span>RHR<br><b>${val(m.rhr)}</b></span></div></div><div class="card"><h3>Lowest-scoring systems</h3>${ds.map(d=>metricLine(d.name,d.score,d.color)).join('')}</div></div>
 <div class="grid cols3" style="margin-top:12px">${['sleep','recovery','cardiac','metabolic','muscle','stress'].map(id=>{const d=domainScores().find(x=>x.id===id);return `<div class="card"><h3>${d.name}</h3><div class="domainScore" style="color:${d.color}">${d.score??'—'}</div><div class="score"><span style="width:${d.score??0}%;background:${d.color}"></span></div></div>`}).join('')}</div>
+<div class="card" style="margin-top:12px;border-color:#FEDF89;background:#FFFAEB"><h2>Not medical advice</h2><p class="muted small">This app is for personal informatics and education only. Do not use it as the sole basis for health, diet, supplement, training, diagnosis, or treatment decisions. Consult a qualified clinician for medical guidance.</p></div>
 ${recommendationsHTML()}
 <div class="card" style="margin-top:12px">
   <h2 style="margin-bottom:14px">Trends — last 30 days <span class="muted small" style="font-size:11px;font-weight:400">${state.sleep.length} nights · ${state.steps.length} step days</span></h2>
@@ -953,7 +988,7 @@ function recommendationsHTML(){
   const PRI_LBL={1:'priority',2:'this week',3:'build up'};
   const PRI_COL={1:'var(--red)',2:'var(--amber)',3:'var(--txt2)'};
   return `<div class="card" style="margin-top:12px">
-    <h2 style="margin-bottom:4px">Recommendations <span class="muted small" style="font-size:11px;font-weight:400">${fired.length} of ${total} presets triggered · evidence-based · not medical advice</span></h2>
+    <h2 style="margin-bottom:4px">Personalized Recommendations <span class="muted small" style="font-size:11px;font-weight:400">${fired.length} insights active</span></h2>
     ${Object.keys(REC_CATS).filter(k=>byCat[k]).map(k=>{
       const cat=REC_CATS[k],recs=byCat[k].slice(0,6);
       return `<div style="margin-top:14px">
@@ -980,7 +1015,7 @@ function whoopMetricStatus(key,val,target,unit=''){
 }
 function viewHealth(a){
   const m=state.metrics;
-  // WHOOP's 9 healthspan metrics with 30-day context
+  // 9 healthspan metrics with 30-day context
   const nineMetrics=[
     {name:'Sleep Duration',   val:m.avgSleep?Math.round(m.avgSleep*10)/10+'h avg':'—', target:'7–9h', good:m.avgSleep>=7, ok:m.avgSleep>=6},
     {name:'Sleep Consistency',val:m.sleepConsistency?Math.round(m.sleepConsistency)+'%':'—', target:'≥70%',good:m.sleepConsistency>=70,ok:m.sleepConsistency>=50},
@@ -1002,8 +1037,8 @@ function viewHealth(a){
   <div class="card">
     <h2>Healthspan age model</h2>
     <div class="age ${a.age>a.chrono+4?'bad':a.age>a.chrono+1?'warn':'good'}">${a.age}</div>
-    <p class="muted">Chronological age ${a.chrono} · DOB ${state.profile?.userData?.birthDate||'not connected'}</p>
-    <p class="muted small" style="margin-top:6px">Based on 30-day rolling averages across WHOOP's 9 healthspan metrics</p>
+    <p class="muted">Chronological age ${a.chrono} · profile age source ${state.profile?.userData?.birthDate?'available':'not connected'}</p>
+    <p class="muted small" style="margin-top:6px">Based on 30-day rolling averages across 9 evidence-anchored health metrics</p>
   </div>
   <div class="card">
     <h2>Age deltas (30-day avg)</h2>
@@ -1011,11 +1046,11 @@ function viewHealth(a){
   </div>
 </div>
 <div class="card" style="margin-top:12px">
-  <h2>WHOOP's 9 Healthspan metrics <span class="pill small" style="font-size:11px;vertical-align:middle">${state.sleep.length}d sleep · ${state.steps.length}d steps</span></h2>
+  <h2>9 Healthspan metrics <span class="pill small" style="font-size:11px;vertical-align:middle">${state.sleep.length}d sleep · ${state.steps.length}d steps</span></h2>
   <div class="grid cols3" style="gap:8px;margin-top:12px">${nineHtml}</div>
 </div>
 <div class="card" style="margin-top:12px">
-  <h2>All Garmin readings (30-day avg)</h2>
+  <h2>All metrics (30-day avg)</h2>
   <div class="grid cols4">${[
     ['HRV',m.hrv?Math.round(m.hrv):'—'],['Body Battery',m.bodyBattery?Math.round(m.bodyBattery):'—'],
     ['Deep %',m.deep?Math.round(m.deep*10)/10:'—'],['REM %',m.rem?Math.round(m.rem*10)/10:'—'],
@@ -1065,7 +1100,7 @@ const TISSUE_INFO={
 };
 function bodySvg(view='front'){
   const M=state.body.M||{};
-  const g=k=>{const n=M[k]||0;return n===0?'url(#tBad)':n<=2?'url(#tWarn)':'url(#tGood)'};
+  const g=k=>{const n=M[k]??0;return n===0?'url(#tBad)':n===1?'url(#tWarn)':'url(#tGood)'};
   const DEFS=`<defs>
     <linearGradient id="tGood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9BEFC4"/><stop offset="1" stop-color="#5FD89B"/></linearGradient>
     <linearGradient id="tWarn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FDE5A7"/><stop offset="1" stop-color="#F3C566"/></linearGradient>
@@ -1153,19 +1188,38 @@ function bodySvg(view='front'){
     <path class="muscle" data-m="Calves" fill="${g('Calves')}" d="M272 620 Q259 610 246 622 L250 702 Q261 710 269 702 Z"/>
   `+close;
 }
-function tissueStatus(n){return n===0?{t:'Untrained',cls:'badC',pill:'background:var(--red-bg);color:var(--red);border-color:#FECDCA'}:n<=2?{t:'Partially trained',cls:'warnC',pill:'background:var(--amber-bg);color:var(--amber);border-color:#FEDF89'}:{t:'Well trained',cls:'goodC',pill:'background:var(--green-bg);color:var(--green);border-color:#A6F4C5'}}
+function tissueStatus(k,n){
+  const isOrgan=ORGAN_KEYS.has(k);
+  if(isOrgan){
+    return n===0?{t:'Needs attention',cls:'badC',pill:'background:var(--red-bg);color:var(--red);border-color:#FECDCA'}:
+           n===1?{t:'Moderate support',cls:'warnC',pill:'background:var(--amber-bg);color:var(--amber);border-color:#FEDF89'}:
+                 {t:'Well supported',cls:'goodC',pill:'background:var(--green-bg);color:var(--green);border-color:#A6F4C5'};
+  }
+  const d=state.body.days?.[k];
+  const label=d===null?'No training history':d<4?'Active':d<=10?'Moderate':'Low';
+  return n===0?{t:label,cls:'badC',pill:'background:var(--red-bg);color:var(--red);border-color:#FECDCA'}:
+         n===1?{t:label,cls:'warnC',pill:'background:var(--amber-bg);color:var(--amber);border-color:#FEDF89'}:
+               {t:label,cls:'goodC',pill:'background:var(--green-bg);color:var(--green);border-color:#A6F4C5'};
+}
 function tissuePanelHTML(k){
-  if(!k)return `<h2>Tissue detail</h2><p class="muted small">Hover or tap any muscle or organ on the figure to see its training status, recent stimulus and the fastest way to improve it.</p>`;
-  const n=state.body.M?.[k]??0, info=TISSUE_INFO[k]||{sys:'',fix:''}, st=tissueStatus(n);
+  if(!k)return `<h2>Tissue detail</h2><p class="muted small">Hover or tap any muscle or organ to see its status and the fastest way to improve it.</p>`;
+  const n=state.body.M?.[k]??0, info=TISSUE_INFO[k]||{sys:'',fix:''}, st=tissueStatus(k,n);
+  const isOrgan=ORGAN_KEYS.has(k);
   const hits=(state.body.log||[]).filter(l=>l.hit.includes(k)).slice(0,4);
+  const d=state.body.days?.[k];
   return `<h2 style="margin-bottom:4px">${esc(k)}</h2>
   <div class="tiny muted" style="margin-bottom:8px">${esc(info.sys)}</div>
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
     <span class="pill" style="${st.pill}">${st.t}</span>
-    <span class="tiny muted">${n} session${n!==1?'s':''} in current history</span>
+    ${!isOrgan&&d!=null?`<span class="tiny muted">Last trained ${d}d ago</span>`:''}
   </div>
+  ${isOrgan?`
+  <div class="tiny" style="font-weight:650;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Lifestyle signals</div>
+  <div class="tiny muted" style="line-height:1.6">Status reflects 30-day aerobic activity, sleep quality, and dietary pattern.</div>
+  `:`
   <div class="tiny" style="font-weight:650;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Recent stimulus</div>
-  ${hits.length?hits.map(h=>`<div class="tiny" style="padding:4px 0;border-bottom:1px solid var(--b)"><b>${esc(h.name)}</b> <span class="muted">· ${esc(h.date)}</span></div>`).join(''):'<div class="tiny muted">Nothing in recent history targets this.</div>'}
+  ${hits.length?hits.map(h=>`<div class="tiny" style="padding:4px 0;border-bottom:1px solid var(--b)"><b>${esc(h.name)}</b> <span class="muted">· ${esc(h.date)}</span></div>`).join(''):'<div class="tiny muted">No recent activity targets this area.</div>'}
+  `}
   <div class="tiny" style="font-weight:650;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;margin:10px 0 5px">How to improve</div>
   <div class="small" style="line-height:1.55">${esc(info.fix)}</div>`;
 }
@@ -1176,16 +1230,16 @@ return `<div style="margin-bottom:10px;display:flex;gap:8px;align-items:center">
 <div id="actLogBox" class="hidden" style="margin-bottom:12px;padding:14px;background:var(--s2);border-radius:var(--r-sm);border:1px solid var(--b)"><input id="actLog" placeholder="e.g. Chest + shoulders strength, 45 min" style="margin-bottom:8px"><button class="btn small" onclick="logManualActivity()">Save to Body Map</button></div>
 <div class="bodyLayout"><div>
 <div class="seg"><button data-body-view="front" class="${view==='front'?'active':''}">Muscles · front</button><button data-body-view="organs" class="${view==='organs'?'active':''}">Organs & systems</button><button data-body-view="back" class="${view==='back'?'active':''}">Posterior chain</button></div>
-<div style="display:flex;gap:16px;margin-bottom:8px;align-items:center" class="tiny muted"><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:linear-gradient(#9BEFC4,#5FD89B);margin-right:5px;vertical-align:-1px"></span>≥3 sessions</span><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:linear-gradient(#FDE5A7,#F3C566);margin-right:5px;vertical-align:-1px"></span>1–2</span><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:linear-gradient(#FBD7D2,#F0ACA3);margin-right:5px;vertical-align:-1px"></span>None</span></div>
+<div style="display:flex;gap:16px;margin-bottom:8px;align-items:center" class="tiny muted"><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:linear-gradient(#9BEFC4,#5FD89B);margin-right:5px;vertical-align:-1px"></span>Active / well supported</span><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:linear-gradient(#FDE5A7,#F3C566);margin-right:5px;vertical-align:-1px"></span>Needs stimulus</span><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:linear-gradient(#FBD7D2,#F0ACA3);margin-right:5px;vertical-align:-1px"></span>Inactive / low signal</span></div>
 <div class="figure">${bodySvg(view)}</div>
 </div><div class="grid">
 <div class="card" id="tissuePanel">${tissuePanelHTML(window.__selTissue)}</div>
-<div class="card"><h2>Training focus by tissue/system</h2><p class="muted small">Computed from your recent Garmin activities plus food and supplement logs (organ support signals).</p>${sorted.map(([k,v])=>metricLine(k,v,colorFor(v))).join('')}</div>
-<div class="card"><h2>Recent activity mapping</h2>${(state.body.log||[]).slice(0,12).map(l=>`<div class="logItem"><b>${esc(l.name)}</b><div class="muted tiny">${esc(l.date)}</div><div>${l.hit.map(h=>`<span class="tag">${esc(h)}</span>`).join(' ')}</div></div>`).join('')||'<p class="muted">No activities loaded yet.</p>'}</div>
+<div class="card"><h2>Focus by tissue & system</h2><p class="muted small">Muscles: days since last targeted. Organs: aerobic activity, sleep, and dietary signals.</p>${sorted.map(([k,v])=>{const c=colorFor(v);const lbl=v===2?'Active':v===1?'Moderate':'Low';const w=v===2?100:v===1?55:10;return `<div class="metric" style="margin:10px 0"><span class="dot" style="background:${c}"></span><div class="name">${k}</div><b style="font-size:12px;color:${c}">${lbl}</b></div><div class="score"><span style="width:${w}%;background:${c}"></span></div>`}).join('')}</div>
+<div class="card"><h2>Recent activity log</h2>${(state.body.log||[]).slice(0,12).map(l=>`<div class="logItem"><b>${esc(l.name)}</b><div class="muted tiny">${esc(l.date)}</div><div>${l.hit.map(h=>`<span class="tag">${esc(h)}</span>`).join(' ')}</div></div>`).join('')||'<p class="muted">No activities loaded yet.</p>'}</div>
 </div></div>`}
 function viewHealth(a){
   const m=state.metrics;
-  // WHOOP's 9 healthspan metrics with 30-day context
+  // 9 healthspan metrics with 30-day context
   const nineMetrics=[
     {name:'Sleep Duration',   val:m.avgSleep?Math.round(m.avgSleep*10)/10+'h avg':'—', target:'7–9h', good:m.avgSleep>=7, ok:m.avgSleep>=6},
     {name:'Sleep Consistency',val:m.sleepConsistency?Math.round(m.sleepConsistency)+'%':'—', target:'≥70%',good:m.sleepConsistency>=70,ok:m.sleepConsistency>=50},
@@ -1207,8 +1261,8 @@ function viewHealth(a){
   <div class="card">
     <h2>Healthspan age model</h2>
     <div class="age ${a.age>a.chrono+4?'bad':a.age>a.chrono+1?'warn':'good'}">${a.age}</div>
-    <p class="muted">Chronological age ${a.chrono} · DOB ${state.profile?.userData?.birthDate||'not connected'}</p>
-    <p class="muted small" style="margin-top:6px">Based on 30-day rolling averages across WHOOP's 9 healthspan metrics</p>
+    <p class="muted">Chronological age ${a.chrono} · profile age source ${state.profile?.userData?.birthDate?'available':'not connected'}</p>
+    <p class="muted small" style="margin-top:6px">Based on 30-day rolling averages across 9 evidence-anchored health metrics</p>
   </div>
   <div class="card">
     <h2>Age deltas (30-day avg)</h2>
@@ -1216,11 +1270,11 @@ function viewHealth(a){
   </div>
 </div>
 <div class="card" style="margin-top:12px">
-  <h2>WHOOP's 9 Healthspan metrics <span class="pill small" style="font-size:11px;vertical-align:middle">${state.sleep.length}d sleep · ${state.steps.length}d steps</span></h2>
+  <h2>9 Healthspan metrics <span class="pill small" style="font-size:11px;vertical-align:middle">${state.sleep.length}d sleep · ${state.steps.length}d steps</span></h2>
   <div class="grid cols3" style="gap:8px;margin-top:12px">${nineHtml}</div>
 </div>
 <div class="card" style="margin-top:12px">
-  <h2>All Garmin readings (30-day avg)</h2>
+  <h2>All metrics (30-day avg)</h2>
   <div class="grid cols4">${[
     ['HRV',m.hrv?Math.round(m.hrv):'—'],['Body Battery',m.bodyBattery?Math.round(m.bodyBattery):'—'],
     ['Deep %',m.deep?Math.round(m.deep*10)/10:'—'],['REM %',m.rem?Math.round(m.rem*10)/10:'—'],
@@ -1301,8 +1355,8 @@ function viewFood(){
     ${nutrientRows}
   </div>`;
 }
-function viewCoach(){return `<div class="grid cols2"><div class="card"><h2>Ask: how am I doing today?</h2><p class="muted small">Uses Garmin metrics, habit state, food/supplement logs, and the metric matrix to generate day-specific actions.</p><textarea id="coachQuestion" placeholder="How am I doing today? What should I train, eat, and supplement?">How am I doing today?</textarea><button class="btn" id="coachBtn" style="margin-top:8px">Ask coach</button><div id="coachOut" class="coachOut" style="margin-top:12px">${state.aiNotes||'No recommendation generated yet.'}</div></div><div class="card"><h2>Recommendation contract</h2><table class="table"><tr><th>Area</th><th>Output</th></tr><tr><td>Activities</td><td>Recovery vs push day, cardio dose, step target</td></tr><tr><td>Workout</td><td>Exact exercises; fixes body-map gaps</td></tr><tr><td>Food</td><td>Lunch/dinner options from current gaps</td></tr><tr><td>Supplements</td><td>Only evidence-aligned suggestions; logs adherence</td></tr></table></div></div>`}
-function viewSettings(){return `<div class="grid cols2"><div class="card"><h2>Garmin connection setup</h2><p class="muted small">The app is independent of Cowork. Use Cowork MCP when available, or point it at your own local Garmin Direct API proxy.</p><label class="small">Connection mode<select id="connectorMode" style="width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:12px;color:var(--txt);padding:10px;margin-top:5px"><option value="auto" ${state.connectorMode==='auto'?'selected':''}>Auto: Cowork if present, otherwise Direct API</option><option value="cowork" ${state.connectorMode==='cowork'?'selected':''}>Cowork Garmin MCP</option><option value="direct" ${state.connectorMode==='direct'?'selected':''}>Direct Garmin API proxy</option></select></label><label class="small" style="display:block;margin-top:12px">Direct API base URL<input id="directApiBase" value="${state.directApiBase||''}" placeholder="http://127.0.0.1:8787"></label><label class="small" style="display:block;margin-top:12px">App API token (optional)<input id="appApiToken" type="password" value="${state.appApiToken||''}" placeholder="Required only if APP_API_TOKEN is set on server"></label><div class="grid cols4" style="margin-top:10px"><button class="btn secondary small" id="testDirectApi">Test Proxy</button><button class="btn secondary small" id="testGarminAuth">Test Garmin</button><button class="btn secondary small" id="testGarminSync">Test Full Sync</button><button class="btn secondary small" id="testAiProvider">Test AI</button></div><div class="coachOut" id="directApiStatus" style="min-height:70px;margin-top:10px">Not tested</div><p style="margin-top:12px">${GARMIN_TOOLS.map(t=>`<span class="tag direct">${t.replace('mcp__Garmin_Connect__','')}</span>`).join(' ')}</p><p class="muted tiny" style="margin-top:10px">Direct browser-to-Garmin login is intentionally not implemented: it would expose credentials and is blocked by CORS. Use the included local proxy server so credentials stay on your machine/server.</p><p class="muted tiny" style="margin-top:8px"><a href="./METRIC_FORMULAS.md" target="_blank" rel="noopener">Metric formulas + provenance</a></p></div><div class="card"><h2>Tracked tag domains</h2><p class="muted small">Every correlation tag from the provided HTML is tracked as a first-class metric domain.</p>${TAGS.map(t=>`<div class="metric" style="margin:8px 0"><span class="dot" style="background:${t.color}"></span><div class="name">${t.name}</div><b>${domainScores().find(d=>d.id===t.id)?.score??'—'}</b></div>`).join('')}</div><div class="card" style="grid-column:1/-1"><h2>Manual metric overrides</h2><div class="grid cols3">${METRIC_REGISTRY.filter(m=>m.source==='manual').map(m=>`<label class="small">${m.name}<input data-manual="${m.key}" value="${state.manual[m.key]??''}" placeholder="${m.note}"></label>`).join('')}</div></div></div>`}
+function viewCoach(){return `<div class="grid cols2"><div class="card"><h2>Ask: how am I doing today?</h2><p class="muted small">Uses your health metrics, habit state, food/supplement logs, and the metric matrix to generate day-specific actions.</p><textarea id="coachQuestion" placeholder="How am I doing today? What should I train, eat, and supplement?">How am I doing today?</textarea><button class="btn" id="coachBtn" style="margin-top:8px">Ask coach</button><div id="coachOut" class="coachOut" style="margin-top:12px">${state.aiNotes||'No recommendation generated yet.'}</div></div><div class="card"><h2>Recommendation contract</h2><table class="table"><tr><th>Area</th><th>Output</th></tr><tr><td>Activities</td><td>Recovery vs push day, cardio dose, step target</td></tr><tr><td>Workout</td><td>Exact exercises; fixes body-map gaps</td></tr><tr><td>Food</td><td>Lunch/dinner options from current gaps</td></tr><tr><td>Supplements</td><td>Only evidence-aligned suggestions; logs adherence</td></tr></table></div></div>`}
+function viewSettings(){return `<div class="grid cols2"><div class="card"><h2>Data connection</h2><p class="muted small">The app works offline from cached data. For live syncing, point it at your local proxy server.</p><label class="small">Connection mode<select id="connectorMode" style="width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:12px;color:var(--txt);padding:10px;margin-top:5px"><option value="auto" ${state.connectorMode==='auto'?'selected':''}>Auto: use MCP if present, otherwise direct API</option><option value="cowork" ${state.connectorMode==='cowork'?'selected':''}>MCP connector</option><option value="direct" ${state.connectorMode==='direct'?'selected':''}>Direct API proxy (local server)</option></select></label><label class="small" style="display:block;margin-top:12px">Direct API base URL<input id="directApiBase" value="${state.directApiBase||''}" placeholder="http://127.0.0.1:8787"></label><label class="small" style="display:block;margin-top:12px">App API token (optional)<input id="appApiToken" type="password" value="${state.appApiToken||''}" placeholder="Required only if APP_API_TOKEN is set on server"></label><div class="grid cols4" style="margin-top:10px"><button class="btn secondary small" id="testDirectApi">Test Proxy</button><button class="btn secondary small" id="testGarminAuth">Test Auth</button><button class="btn secondary small" id="testGarminSync">Test Full Sync</button><button class="btn secondary small" id="testAiProvider">Test AI</button></div><div class="coachOut" id="directApiStatus" style="min-height:70px;margin-top:10px">Not tested</div><p style="margin-top:12px">${GARMIN_TOOLS.map(t=>`<span class="tag direct">${t.replace('mcp__Garmin_Connect__','')}</span>`).join(' ')}</p><p class="muted tiny" style="margin-top:10px">Direct browser-to-API login is intentionally not implemented; credentials must stay on your machine or server. Use the included local proxy server.</p><p class="muted tiny" style="margin-top:8px"><a href="./METRIC_FORMULAS.md" target="_blank" rel="noopener">Metric formulas + provenance</a></p></div><div class="card"><h2>Tracked tag domains</h2><p class="muted small">Every correlation tag from the provided HTML is tracked as a first-class metric domain.</p>${TAGS.map(t=>`<div class="metric" style="margin:8px 0"><span class="dot" style="background:${t.color}"></span><div class="name">${t.name}</div><b>${domainScores().find(d=>d.id===t.id)?.score??'—'}</b></div>`).join('')}</div><div class="card" style="grid-column:1/-1"><h2>Manual metric overrides</h2><div class="grid cols3">${METRIC_REGISTRY.filter(m=>m.source==='manual').map(m=>`<label class="small">${m.name}<input data-manual="${m.key}" value="${state.manual[m.key]??''}" placeholder="${m.note}"></label>`).join('')}</div></div></div>`}
 async function askAI(prompt, context=null){
   try{
     if(activeConnector()==='direct'){
@@ -1360,8 +1414,8 @@ async function askNutritionAI(foodText){
   }catch(e){console.warn(e)}
   return null
 }
-function coachContext(question='How am I doing today?'){return {date:TODAY,userQuestion:question,age:ageFromDob(state.profile?.userData?.birthDate),garminMetrics:state.metrics,domainScores:domainScores().map(d=>({id:d.id,name:d.name,score:d.score,inputs:d.metrics.map(m=>({name:m.name,source:m.source,score:scoreFor(m.key)}))})),bodyFocus:state.body.M||{},neglectedTissues:Object.entries(state.body.M||{}).filter(([,v])=>v===0).map(([k])=>k),habits:state.habits[TODAY]||{},foodToday:state.food.filter(f=>f.date===TODAY),supplementsToday:state.supplements.filter(s=>s.date===TODAY)}}
-function coachPrompt(question='How am I doing today?'){return `User question: ${question}. Use the supplied Garmin metrics, every tag/domain score, body focus gaps, habits, food macro/micronutrient estimates, and supplements. Return: Status, Activities, Exact workout, Lunch/dinner, Supplements, Cautions. Avoid medical claims; flag lab-only unknowns.`}
+function coachContext(question='How am I doing today?'){return {date:TODAY,userQuestion:question,age:ageFromDob(state.profile?.userData?.birthDate),metrics:state.metrics,domainScores:domainScores().map(d=>({id:d.id,name:d.name,score:d.score,inputs:d.metrics.map(m=>({name:m.name,source:m.source,score:scoreFor(m.key)}))})),bodyFocus:state.body.M||{},neglectedTissues:Object.entries(state.body.M||{}).filter(([,v])=>v===0).map(([k])=>k),habits:state.habits[TODAY]||{},foodToday:state.food.filter(f=>f.date===TODAY),supplementsToday:state.supplements.filter(s=>s.date===TODAY)}}
+function coachPrompt(question='How am I doing today?'){return `User question: ${question}. Use the supplied health metrics, every tag/domain score, body focus gaps, habits, food macro/micronutrient estimates, and supplements. Return: Status, Activities, Exact workout, Lunch/dinner, Supplements, Cautions. Avoid medical claims; flag lab-only unknowns.`}
 function fallbackCoach(){const m=state.metrics, low=domainScores().filter(d=>d.score!=null).sort((a,b)=>a.score-b.score).slice(0,3).map(d=>d.name).join(', ');const neglected=Object.entries(state.body.M||{}).filter(([,v])=>v===0).map(([k])=>k).slice(0,5).join(', ');return `Status: lowest systems are ${low||'not enough data'}.\n\nActivity: ${m.avgSleep&&m.avgSleep<6.5?'keep intensity moderate; prioritize steps and easy Zone 2':'add 30–40 min Zone 2 or a brisk walk'}.\n\nWorkout: prioritize pull balance: lat pulldown 3×10, seated row 3×10, face pulls 3×15, biceps curls 2×12, core carry 3 rounds. Neglected: ${neglected||'none obvious'}.\n\nFood: choose high-protein, high-fiber lunch/dinner: lean protein + dal/beans + vegetables + rice/roti adjusted to hunger. Avoid large late meal if sleep consistency is poor.\n\nSupplements: log current stack first. Evidence-aligned basics to discuss with clinician if appropriate: creatine, vitamin D if low, omega-3 if low fish intake, electrolytes around sweaty training.`}
 let _charts={};
 function mkChart(id,type,labels,data,color){
@@ -1461,13 +1515,13 @@ function bind(){
   const connector=document.getElementById('connectorMode'); if(connector)connector.onchange=()=>{state.connectorMode=connector.value;save('connectorMode',state.connectorMode);render()};
   const directBase=document.getElementById('directApiBase'); if(directBase)directBase.onchange=()=>{state.directApiBase=directBase.value.trim();save('directApiBase',state.directApiBase);render()};
   const apiToken=document.getElementById('appApiToken'); if(apiToken)apiToken.onchange=()=>{state.appApiToken=apiToken.value.trim();save('appApiToken',state.appApiToken);render()};
-  const testDirect=document.getElementById('testDirectApi'); if(testDirect)testDirect.onclick=async()=>{const el=document.getElementById('directApiStatus');el.textContent='Testing proxy...';try{const {base}=apiConfig();let r=await fetch(`${base}/health`);let txt=await r.text();if(!r.ok||!txt.trim().startsWith('{')){r=await fetch(`${base}/api/health`);txt=await r.text()}const j=JSON.parse(txt);el.textContent=r.ok?`Proxy reachable\nGarmin configured: ${j.garminConfigured}\nAI configured: ${j.aiConfigured}\nMock Garmin: ${j.mockGarmin}\nMock AI: ${j.mockAi}`:'Proxy returned '+r.status}catch(e){el.textContent='Proxy unreachable: '+e.message}};
-  const testGarmin=document.getElementById('testGarminAuth'); if(testGarmin)testGarmin.onclick=async()=>{const el=document.getElementById('directApiStatus');el.textContent='Testing Garmin profile...';try{const {base}=apiConfig();const headers=apiHeaders();const r=await fetch(`${base}/api/garmin/user-profile`,{method:'POST',headers,body:'{}'});const j=await r.json();el.textContent=r.ok?`Garmin OK\nDOB: ${j.result?.userData?.birthDate||'unknown'}\nProfile ID: ${j.result?.id||j.result?.userProfileId||'unknown'}`:`Garmin failed ${r.status}\n${j.error||''}`}catch(e){el.textContent='Garmin test failed: '+e.message}};
+  const testDirect=document.getElementById('testDirectApi'); if(testDirect)testDirect.onclick=async()=>{const el=document.getElementById('directApiStatus');el.textContent='Testing proxy...';try{const {base}=apiConfig();let r=await fetch(`${base}/health`);let txt=await r.text();if(!r.ok||!txt.trim().startsWith('{')){r=await fetch(`${base}/api/health`);txt=await r.text()}const j=JSON.parse(txt);el.textContent=r.ok?`Proxy reachable\nData source configured: ${j.garminConfigured}\nAI configured: ${j.aiConfigured}\nMock data: ${j.mockGarmin}\nMock AI: ${j.mockAi}`:'Proxy returned '+r.status}catch(e){el.textContent='Proxy unreachable: '+e.message}};
+  const testGarmin=document.getElementById('testGarminAuth'); if(testGarmin)testGarmin.onclick=async()=>{const el=document.getElementById('directApiStatus');el.textContent='Testing profile...';try{const {base}=apiConfig();const headers=apiHeaders();const r=await fetch(`${base}/api/garmin/user-profile`,{method:'POST',headers,body:'{}'});const j=await r.json();el.textContent=r.ok?`Profile OK\nProfile loaded: ${j.result?'yes':'no'}`:`Profile failed ${r.status}\n${j.error||''}`}catch(e){el.textContent='Profile test failed: '+e.message}};
 
-  const testSync=document.getElementById('testGarminSync'); if(testSync)testSync.onclick=async()=>{const el=document.getElementById('directApiStatus');el.textContent='Testing full Garmin sync...';try{const sync=await directSyncFetch();if(sync){el.textContent=`Full sync OK\nDOB: ${sync.profile?.userData?.birthDate||'unknown'}\nSleep nights: ${sync.sleep?.length??0}\nStep days: ${Array.isArray(sync.steps)?sync.steps.length:0}\nActivities: ${sync.activities?.activities?.length??0}\nPartial errors: ${sync.errors?.length??0}`}else{el.textContent='Full sync failed: no response'}}catch(e){el.textContent='Full sync failed: '+e.message}};
+  const testSync=document.getElementById('testGarminSync'); if(testSync)testSync.onclick=async()=>{const el=document.getElementById('directApiStatus');el.textContent='Testing full sync...';try{const sync=await directSyncFetch();if(sync){el.textContent=`Full sync OK\nProfile loaded: ${sync.profile?'yes':'no'}\nSleep nights: ${sync.sleep?.length??0}\nStep days: ${Array.isArray(sync.steps)?sync.steps.length:0}\nActivities: ${sync.activities?.activities?.length??0}\nPartial errors: ${sync.errors?.length??0}`}else{el.textContent='Full sync failed: no response'}}catch(e){el.textContent='Full sync failed: '+e.message}};
   const testAi=document.getElementById('testAiProvider'); if(testAi)testAi.onclick=async()=>{const el=document.getElementById('directApiStatus');el.textContent='Testing AI nutrition endpoint...';try{const {base}=apiConfig();const headers=apiHeaders();const r=await fetch(`${base}/api/ai/nutrition`,{method:'POST',headers,body:JSON.stringify({foodText:'2 eggs and toast'})});const j=await r.json();el.textContent=r.ok?`AI OK\n${(j.result?.text||'').slice(0,500)}`:`AI failed ${r.status}\n${j.error||''}`}catch(e){el.textContent='AI test failed: '+e.message}};
   document.querySelectorAll('[data-body-view]').forEach(b=>b.onclick=()=>{localStorage.setItem('hos:bodyView',b.dataset.bodyView);render()});
-  const tip=document.getElementById('tip');document.querySelectorAll('[data-m]').forEach(el=>{const k=el.dataset.m;el.onmousemove=e=>{const v=state.body.M?.[k]??0;tip.style.display='block';tip.style.left=e.clientX+12+'px';tip.style.top=e.clientY+12+'px';tip.textContent=`${k}: ${v} sessions`};el.onmouseenter=()=>updateTissuePanel(k);el.onclick=()=>updateTissuePanel(k);el.onmouseleave=()=>tip.style.display='none'});
+  const tip=document.getElementById('tip');document.querySelectorAll('[data-m]').forEach(el=>{const k=el.dataset.m;el.onmousemove=e=>{const v=state.body.M?.[k]??0;tip.style.display='block';tip.style.left=e.clientX+12+'px';tip.style.top=e.clientY+12+'px';tip.textContent=k};el.onmouseenter=()=>updateTissuePanel(k);el.onclick=()=>updateTissuePanel(k);el.onmouseleave=()=>tip.style.display='none'});
 }
 function activateTab(i){setTimeout(()=>{const v=document.querySelector(`[data-view="${i}"]`);if(!v)return;v.querySelectorAll('.card,.domain,.habit').forEach((el,j)=>{el.style.animation='none';void el.offsetWidth;el.style.animation=`fadeUp .26s ease ${j*.045}s both`;});},10);
   document.querySelectorAll('.tab,.view').forEach(x=>x.classList.remove('active'));
@@ -1503,7 +1557,7 @@ render();
         setTimeout(initTrendCharts,200);
         const ageS=j.age_seconds;
         const conn=document.getElementById('conn'),ls=document.getElementById('lastSync');
-        if(conn)conn.textContent='Garmin: cached';if(conn)conn.className='pill ok';
+        if(conn)conn.textContent='Cached data';if(conn)conn.className='pill ok';
         if(ls)ls.textContent=ageS?`Cached ${ageS<3600?Math.round(ageS/60)+'m':Math.round(ageS/3600)+'h'} ago — syncing…`:'Cached — syncing…';
       }
     }

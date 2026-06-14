@@ -4,7 +4,9 @@
 
 ## 1. Not a medical device, not medical advice
 
-Health OS is a personal informatics hobby project. It is **not** a medical device and has not been evaluated, cleared, or approved by the FDA, EMA, CDSCO, or any other regulatory body. Nothing it displays — including "healthspan age", system scores, nutrient coverage, or recommendations — is medical advice, diagnosis, or treatment. The models are transparent heuristics built on published population studies; they are **not** validated clinical instruments, and population-level statistics do not predict individual outcomes. Always consult a qualified healthcare professional before making health, exercise, supplement, or diet decisions, especially if you have any medical condition. Never disregard professional medical advice because of something this software displayed.
+Health OS is a personal informatics hobby project. It is **not** a medical device and has not been evaluated, cleared, or approved by the FDA, EMA, CDSCO, or any other regulatory body. Nothing it displays — including "healthspan age", system scores, nutrient coverage, body-map status, or recommendations — is medical advice, diagnosis, treatment, prescription, or a substitute for professional care.
+
+Do **not** use Health OS as the sole or primary basis for health, diet, supplement, exercise, diagnosis, or treatment decisions. Its models are transparent heuristics built on published population studies; they are **not** validated clinical instruments, and population-level statistics do not predict individual outcomes. Always consult a qualified healthcare professional before making health, exercise, supplement, or diet decisions, especially if you have any medical condition, symptoms, abnormal labs, pregnancy, or prescription medication. Never disregard professional medical advice because of something this software displayed.
 
 ## 2. Unofficial Garmin integration — account risk
 

@@ -1,10 +1,12 @@
 # Health OS
 
+> **Medical-use waiver:** Health OS is an educational personal-informatics project, not a medical device or clinical decision system. Do not use it as the sole or primary basis for health, diet, supplement, exercise, diagnosis, or treatment decisions. Always consult a qualified healthcare professional for medical advice, especially before changing medication, supplements, training intensity, or treatment plans.
+
 A local-first personal health dashboard that turns your Garmin Connect data into a single operating view: healthspan age, 15 health-system scores, 30-day trends, an anatomical body focus map, nutrition tracking against RDAs, and evidence-cited recommendations.
 
 **[Live demo](https://health-os-orcin.vercel.app/demo)** — fully synthetic data, nothing personal.
 
-> ⚠️ **Read [DISCLAIMER.md](DISCLAIMER.md) before using.** This is not a medical device, the Garmin integration uses an unofficial API, and you run this software entirely at your own risk.
+> ⚠️ **Read [DISCLAIMER.md](DISCLAIMER.md) before using.** This is not a medical device, it must not be relied on as medical advice, the Garmin integration uses an unofficial API, and you run this software entirely at your own risk.
 
 ## What it does
 
