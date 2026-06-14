@@ -1,4 +1,4 @@
-const CACHE = 'health-os-v1';
+const CACHE = 'health-os-v2';
 const ASSETS = [
   './health-operating-system.html',
   './manifest.webmanifest',
